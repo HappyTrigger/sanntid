@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 	"fmt"
+	"strconv"
 )
 
 const (
@@ -91,10 +92,11 @@ func main(){
 	recieveChan := make(chan RawMessage)
 	go recieve(recieveChan, broadcastListener)
 
-
+	//msg2:=RawMessage{}
 	log.Println("UDP initialized")
-
+   	//buf22 := make(RawMessage)
 	udpBroadcastMsg, udpRecvMsg := make(chan []byte), make(chan RawMessage)
+
 
 	go func() {
 		for {
@@ -105,18 +107,25 @@ func main(){
 
 				//if rawMsg.Ip != localIp {
 				udpRecvMsg <- rawMsg
+
 				//}
 			}
 		}
 	}()
+	i := 3
 	for{
+		msg := strconv.Itoa(i)
+		i++
+		buf := []byte(msg)
+
 		time.Sleep(3*time.Second)
-		fmt.Println("hei")
-		udpBroadcastMsg<-bytes.Write(2)
 
+		udpBroadcastMsg<-buf
 
-	}
-
+		msg2:=udpRecvMsg
+		fmt.Printf("%+v\n", msg2)
+		}
+	
 
 	//return udpBroadcastMsg, udpRecvMsg
 }
