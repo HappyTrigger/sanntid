@@ -8,7 +8,8 @@ import (
 
 	)
 const (
-	PORT = ":30000"
+	PORT = ":20022"
+	PORTLISTENER = ":30000"
 	)
 
 type Message struct {
@@ -19,7 +20,7 @@ type Message struct {
 	Checksum int
 }
 
-func UDPSender(channel chan Message) {
+func UDPSender(channel<-chan Message) {
 	broadcastAddr := []string{"129.241.187.255", PORT}
 	broadcastUDP, _ := net.ResolveUDPAddr("udp", strings.Join(broadcastAddr, ""))
 	broadcastConn, _ := net.DialUDP("udp", nil, broadcastUDP) //returns the UDP connection interface which supports reading and writing
@@ -32,8 +33,8 @@ func UDPSender(channel chan Message) {
 	}
 }
 
-func UDPListener(channel chan Message) {
-	UDPReceiveAddr, err := net.ResolveUDPAddr("udp", PORT);
+func UDPListener(channel<-chan Message) {
+	UDPReceiveAddr, err := net.ResolveUDPAddr("udp", PORTLISTENER);
 	if err != nil { fmt.Println(err) }
 
 	UDPConn, err := net.ListenUDP("udp", UDPReceiveAddr);
@@ -56,10 +57,10 @@ func UDPListener(channel chan Message) {
 
 
 func main() {
-	Message mess
-
-	mess.Source := 5
+	message := make(chan Message)
 	
 
-	go UDPSender
+	
+
+	go UDPSender(message)
 }
