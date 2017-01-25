@@ -1,16 +1,14 @@
-package main
+package udp
 
 import (
 	"bytes"
 	"log"
 	"net"
-	"time"
-	"fmt"
 )
 
 const (
 	broadcastAddress = "255.255.255.255:10001"
-	listenPort       = ":30000"
+	listenPort       = ":10002"
 )
 
 type RawMessage struct {
@@ -65,10 +63,9 @@ func broadcast(broadcastChan <-chan []byte, localListener *net.UDPConn) {
 		}
 	}
 }
-var localIp string
-func main(){
-	localIp = "127.0.0.1"
-	
+
+func Init(localIp string) (chan<- []byte, <-chan RawMessage) {
+
 	addr, _ := net.ResolveUDPAddr("udp", listenPort)
 
 	localListener, err := net.ListenUDP("udp", addr)
@@ -91,7 +88,6 @@ func main(){
 	recieveChan := make(chan RawMessage)
 	go recieve(recieveChan, broadcastListener)
 
-
 	log.Println("UDP initialized")
 
 	udpBroadcastMsg, udpRecvMsg := make(chan []byte), make(chan RawMessage)
@@ -102,24 +98,12 @@ func main(){
 			case msg := <-udpBroadcastMsg:
 				broadcastChan <- msg
 			case rawMsg := <-recieveChan:
-
-				//if rawMsg.Ip != localIp {
-				udpRecvMsg <- rawMsg
-				//}
+				if rawMsg.Ip != localIp {
+					udpRecvMsg <- rawMsg
+				}
 			}
 		}
 	}()
-	for{
-		time.Sleep(3*time.Second)
-		fmt.Println("hei")
-		udpBroadcastMsg<-bytes.Write(2)
 
-
-	}
-
-
-	//return udpBroadcastMsg, udpRecvMsg
+	return udpBroadcastMsg, udpRecvMsg
 }
-
-
-
