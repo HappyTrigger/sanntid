@@ -68,8 +68,8 @@ func broadcast(broadcastChan <-chan []byte, localListener *net.UDPConn) {
 }
 var localIp string
 func main(){
-	localIp = "127.0.0.1"
-	
+	//localIp = "127.0.0.1"
+	localIp = "192.168.1.5"
 	addr, _ := net.ResolveUDPAddr("udp", listenPort)
 
 	localListener, err := net.ListenUDP("udp", addr)
@@ -118,12 +118,12 @@ func main(){
 		i++
 		buf := []byte(msg)
 
+		udpBroadcastMsg<-RawMessage{Data: buf, Ip:"192.168.1.5"}
+
 		time.Sleep(3*time.Second)
 
-		udpBroadcastMsg<-buf
 
-		msg2:=udpRecvMsg
-		fmt.Printf("%+v\n", msg2)
+		fmt.Printf("%+v\n", <-udpRecvMsg)
 		}
 	
 
