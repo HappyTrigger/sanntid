@@ -344,4 +344,3 @@ func Init(tcpClient chan<- ClientInterface, tcpDial <-chan DialRequest,setStatus
 		}
 	}
 }
-

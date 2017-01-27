@@ -1,17 +1,14 @@
-package main
+package udp
 
 import (
 	"bytes"
 	"log"
 	"net"
-	"time"
-	"fmt"
-	"strconv"
 )
 
 const (
 	broadcastAddress = "255.255.255.255:10001"
-	listenPort       = ":30000"
+	listenPort       = ":10002"
 )
 
 type RawMessage struct {
@@ -66,10 +63,9 @@ func broadcast(broadcastChan <-chan []byte, localListener *net.UDPConn) {
 		}
 	}
 }
-var localIp string
-func main(){
-	//localIp = "127.0.0.1"
-	localIp = "192.168.1.5"
+
+func Init(localIp string) (chan<- []byte, <-chan RawMessage) {
+	fmt.Println("Inne i gorutine")
 	addr, _ := net.ResolveUDPAddr("udp", listenPort)
 
 	localListener, err := net.ListenUDP("udp", addr)
@@ -92,43 +88,27 @@ func main(){
 	recieveChan := make(chan RawMessage)
 	go recieve(recieveChan, broadcastListener)
 
-	//msg2:=RawMessage{}
 	log.Println("UDP initialized")
-   	//buf22 := make(RawMessage)
+
 	udpBroadcastMsg, udpRecvMsg := make(chan []byte), make(chan RawMessage)
 
-
 	go func() {
+		fmt.Println("Gorutine started in udp.init")
 		for {
 			select {
 			case msg := <-udpBroadcastMsg:
 				broadcastChan <- msg
+				fmt.Println("sender beskjed")
 			case rawMsg := <-recieveChan:
+				fmt.Println("Beskjed mottat fra:",rawMsg.Ip)
+				if rawMsg.Ip != localIp {
+					fmt.Println("Beskjed sendt videre")
+					udpRecvMsg <- rawMsg
 
-				//if rawMsg.Ip != localIp {
-				udpRecvMsg <- rawMsg
-
-				//}
+				}
 			}
 		}
 	}()
-	i := 3
-	for{
-		msg := strconv.Itoa(i)
-		i++
-		buf := []byte(msg)
 
-		udpBroadcastMsg<-RawMessage{Data: buf, Ip:"192.168.1.5"}
-
-		time.Sleep(3*time.Second)
-
-
-		fmt.Printf("%+v\n", <-udpRecvMsg)
-		}
-	
-
-	//return udpBroadcastMsg, udpRecvMsg
+	return udpBroadcastMsg, udpRecvMsg
 }
-
-
-

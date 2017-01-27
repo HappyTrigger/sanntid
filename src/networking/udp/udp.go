@@ -4,17 +4,21 @@ import (
 	"bytes"
 	"log"
 	"net"
+	"fmt"
 )
 
 const (
 	broadcastAddress = "255.255.255.255:10001"
-	listenPort       = ":10002"
+	listenPort       = ":30000"
 )
 
 type RawMessage struct {
 	Data []byte
 	Ip   string
 }
+
+
+
 
 func recieve(recieveChan chan<- RawMessage, broadcastListener *net.UDPConn) {
 	defer func() {
@@ -64,7 +68,7 @@ func broadcast(broadcastChan <-chan []byte, localListener *net.UDPConn) {
 	}
 }
 
-func Init(localIp string) (chan<- []byte, <-chan RawMessage) {
+func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 
 	addr, _ := net.ResolveUDPAddr("udp", listenPort)
 
@@ -88,22 +92,34 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage) {
 	recieveChan := make(chan RawMessage)
 	go recieve(recieveChan, broadcastListener)
 
-	log.Println("UDP initialized")
-
+	
+	log.Println("UDg initialized")
+   	
 	udpBroadcastMsg, udpRecvMsg := make(chan []byte), make(chan RawMessage)
 
+
 	go func() {
+		fmt.Println("Messaging-system online")
 		for {
 			select {
 			case msg := <-udpBroadcastMsg:
+				fmt.Println("Message sent")
 				broadcastChan <- msg
+
 			case rawMsg := <-recieveChan:
-				if rawMsg.Ip != localIp {
-					udpRecvMsg <- rawMsg
-				}
+				fmt.Println("Message recieved from:",rawMsg.Ip)
+				fmt.Println("Ip given in message",rawMsg.Ip, "Your Ip:",localIp)
+				//if rawMsg.Ip != localIp {
+				fmt.Println("Message recived and processed")
+				udpRecvMsg <- rawMsg
+
+				
 			}
 		}
 	}()
 
 	return udpBroadcastMsg, udpRecvMsg
 }
+
+
+
