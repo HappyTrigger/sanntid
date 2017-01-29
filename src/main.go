@@ -1,5 +1,7 @@
 package main
 
+//Pull from https://github.com/johhat/sanntidsheis if needed
+
 import (	
 	"./networking"
 	"fmt"
