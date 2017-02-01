@@ -6,12 +6,14 @@ import (
 	"./udp"
     "fmt"
     "time"
-	"strconv"
+	//"strconv"
 	"log"
+	".././communication"
 
 )
 
 var localIp string
+
 
 func init() {
 
@@ -32,22 +34,28 @@ func Run(){
 
 	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
 
-	i := 3
-	for{
-		msg := strconv.Itoa(i)
-		i++
-		buf := []byte(msg)
-		udpBroadcastMsg<-buf
-		time.Sleep(3*time.Second)
+	//i := 3
+	msg2 := Communication.NewOrder{Floor:1,Direction:1}
+	msg3 := Communication.NewOrder{Floor:0,Direction:0}	
+	//raw_m := udp.RawMessage{}
 
-		fmt.Printf("%+v\n", <-udpRecvMsg)
+	for{
+
+		buf,err:=Communication.Encoder(msg2)
+		if err==nil{
+			udpBroadcastMsg<-buf
+		}
+		msg2.Floor = msg2.Floor + 1
+
+		//buf := []byte(msg)
+		time.Sleep(3*time.Second)
+		raw_m:=<-udpRecvMsg
+		Communication.Decoder(raw_m.Data,&msg3)
+		fmt.Printf("%+v\n", msg3.Floor)
+
 		}
 
 
-
-		
-
-	
 }
 
 

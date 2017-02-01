@@ -1,5 +1,5 @@
 package udp
-//129.241.187.17
+
 import (
 	"bytes"
 	"log"
@@ -93,7 +93,7 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 	go recieve(recieveChan, broadcastListener)
 
 	
-	log.Println("UDg initialized")
+	log.Println("UDP initialized")
    	
 	udpBroadcastMsg, udpRecvMsg := make(chan []byte), make(chan RawMessage)
 
@@ -107,10 +107,10 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 				broadcastChan <- msg
 
 			case rawMsg := <-recieveChan:
-					if rawMsg.Ip != localIp {
+					//if rawMsg.Ip != localIp {
 						fmt.Println("Message recived and processed from ", rawMsg.Ip)
 						udpRecvMsg <- rawMsg
-					}
+					//}
 
 				
 			}
