@@ -30,7 +30,6 @@ func Run(){
 	log.Println("---Starting network loop---")
 	log.Println("The ip of this computer is: ", localIp)	
 
-	localIp = "129.241.187.38"
 	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
 
 	i := 3
