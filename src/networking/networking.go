@@ -41,6 +41,11 @@ func Run(){
 
 	for{
 
+		
+
+
+
+
 		buf,err:=Communication.Encoder(msg2)
 		if err==nil{
 			udpBroadcastMsg<-buf

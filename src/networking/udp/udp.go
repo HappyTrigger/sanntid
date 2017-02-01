@@ -107,10 +107,10 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 				broadcastChan <- msg
 
 			case rawMsg := <-recieveChan:
-					//if rawMsg.Ip != localIp {
+					if rawMsg.Ip != localIp {
 						fmt.Println("Message recived and processed from ", rawMsg.Ip)
 						udpRecvMsg <- rawMsg
-					//}
+					}
 
 				
 			}
