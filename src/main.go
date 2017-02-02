@@ -7,7 +7,7 @@ import (
 	"./utilities"
 	"./manager"
 	"./elevator"
-	"fmt"
+	"log"
 )
 
 func main() {
@@ -24,6 +24,6 @@ func main() {
 
 	for{
 	}
-	fmt.Println("Exiting program")
+	log.Println("Exiting program")
 
 }

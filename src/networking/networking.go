@@ -68,7 +68,7 @@ func processUDPMsg(processChan <-chan utilities.Message, Send_msg chan<-utilitie
 				switch msg.MessageType{
 
 					case utilities.MESSAGE_ACKNOLEDGE: 
-						log.Println("Message achnoledge")
+						log.Println("Message achnoledge from", msg)
 
 
 					case utilities.MESSAGE_HEARTBEAT: 
@@ -82,12 +82,5 @@ func processUDPMsg(processChan <-chan utilities.Message, Send_msg chan<-utilitie
 	}
 }
 
-func SendHeartBeat(counter int) {
-	
-}
-
-func Heartbeat_recieved(m utilities.Message) {
-	
-}
 
 
