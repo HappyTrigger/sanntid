@@ -1,4 +1,4 @@
-package Communication
+package utilities
 
 
 import (
@@ -8,14 +8,12 @@ import (
 
 )
 
-
-
-func Encoder(message NewOrder)([]byte, error){
+func Encoder(message Message)([]byte, error){
 	return json.Marshal(message)
 }
 
 
-func Decoder(data []byte, message* NewOrder) {
+func Decoder(data []byte, message* Message) {
 		if err := json.Unmarshal(data, message); err!=nil{
 			fmt.Println("Something went wrong when decoding", err)
 		}

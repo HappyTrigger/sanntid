@@ -4,15 +4,25 @@ package main
 
 import (	
 	"./networking"
+	"./utilities"
+	"./manager"
 	"fmt"
 )
 
 func main() {
 	
+	sendMsg := make(chan utilities.Message)
+	recMsg := make(chan utilities.Message)
 
 
-	go networking.Run()
+
+	
+	go manager.Run(sendMsg, recMsg )
+	go networking.Run(sendMsg,recMsg)
+
 	for{
+
+
 		
 	}
 	fmt.Println("Exiting program")
