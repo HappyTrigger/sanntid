@@ -4,7 +4,7 @@ package networking
 import (
 
 	"./udp"
-    "fmt"
+    //"fmt"
     //"time"
 	//"strconv"
 	"log"
@@ -44,12 +44,9 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message){
 	for{		
 		select {
 			case msg := <-sendMsg: 
-				buf,err:=utilities.Encoder(msg)
-				if err==nil{
-					udpBroadcastMsg<-buf
-				}else {
-        			fmt.Println("Error while decoding")
-    			}
+				buf:=utilities.Encoder(msg)
+				udpBroadcastMsg<-buf
+				
 
 
 	
@@ -84,5 +81,8 @@ func processUDPMsg(processChan <-chan utilities.Message, Send_msg chan<-utilitie
 	}
 }
 
+func sendHeartBeat() {
+	
+}
 
 
