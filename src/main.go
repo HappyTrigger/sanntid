@@ -6,6 +6,7 @@ import (
 	"./networking"
 	"./utilities"
 	"./manager"
+	"./elevator"
 	"fmt"
 )
 
@@ -17,13 +18,11 @@ func main() {
 
 
 	
-	go manager.Run(sendMsg, recMsg )
+	go manager.Run(sendMsg, recMsg)
 	go networking.Run(sendMsg,recMsg)
+	go elevator.Run()
 
 	for{
-
-
-		
 	}
 	fmt.Println("Exiting program")
 

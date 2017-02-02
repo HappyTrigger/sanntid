@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"log"
 	"net"
-	"fmt"
+	
 )
 
 const (
@@ -99,16 +99,13 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 
 
 	go func() {
-		fmt.Println("Messaging-system online")
 		for {
 			select {
 			case msg := <-udpBroadcastMsg:
-				fmt.Println("Message sent")
 				broadcastChan <- msg
 
 			case rawMsg := <-recieveChan:
 					if rawMsg.Ip != localIp {
-						fmt.Println("Message recived and processed from ", rawMsg.Ip)
 						udpRecvMsg <- rawMsg
 					}
 

@@ -14,17 +14,35 @@ func Init(){
 
 func Run(recMsg <-chan utilities.Message, sendMsg chan <- utilities.Message ){
 
-	msg2 := utilities.Message{MessageType: utilities.MESSAGE_ACKNOLEDGE}
-	for{
+	msg2 := utilities.Message{MessageType: utilities.MESSAGE_ORDER}
+	
+	go func () {
 		sendMsg<-msg2
 		time.Sleep(3*time.Second)
-		msg2:=<-recMsg
-		fmt.Printf("%+v\n", msg2.MessageType)
-		msg2.MessageType+=1
+	}()
 
 
+	for{
+		select{
+			case msg:=<-recMsg:
+				switch msg.MessageType{
+					case utilities.MESSAGE_ORDER:
+						fmt.Println("New order")
 
-		
+
+					case utilities.MESSAGE_STATE:
+						fmt.Println("New State")
+
+
+					case utilities.MESSAGE_ORDER_COMPLETE:
+						fmt.Println("Order complete")
+
+
+				}
+
+		}
 	}
 
 }
+
+
