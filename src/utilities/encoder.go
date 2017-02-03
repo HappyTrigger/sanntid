@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"log"
 
+
+
 )
 
 func Encoder(message Message)([]byte){
@@ -16,11 +18,12 @@ func Encoder(message Message)([]byte){
 }
 
 
-func Decoder(data []byte, message* Message) {
+func Decoder(data []byte) Message {
+		var message Message
 		if err := json.Unmarshal(data, message); err!=nil{
 			log.Fatal("Decoder failed", err)
 		}
-	return
+	return message
 }
 
 

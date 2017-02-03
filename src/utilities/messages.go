@@ -3,7 +3,7 @@ package utilities
 
 
 const (
-	MESSAGE_ACKNOLEDGE  	= 0
+	MESSAGE_ACKNOWLEDGE  	= 0
 	MESSAGE_ORDER 			= 1
 	MESSAGE_STATE 		   	= 2
 	MESSAGE_ORDER_COMPLETE 	= 3
@@ -21,15 +21,17 @@ const(
 
 
 type Message struct{
-	Message_Id int
+	Message_sender string
+	Message_Id int 
 	MessageType int 
-	Acknoledge Acknoledge
+	Acknowledge Acknowledge
 	State State
 	NewOrder NewOrder
 	Heartbeat Heartbeat
 }
 
-type Acknoledge struct{
+type Acknowledge struct{
+	Message_recieved_from string
 	Message_Id int
 }
 
@@ -45,15 +47,13 @@ type State struct{
 
 }
 
-const Heartbeat_code = "Gruppe 45" 
 
 func CreateHeartbeat(counter int) Heartbeat {
-	return Heartbeat{Code: Heartbeat_code, Counter: counter}
+	return Heartbeat{Counter: counter}
 }
 
 type Heartbeat struct{
 	Counter int
-	Code string
 }
 
 
