@@ -9,6 +9,7 @@ import (
 	//"strconv"
 	"log"
 	".././utilities"
+	"sync"
 
 )
 
@@ -40,9 +41,10 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message){
 	
 
 	MsgAchnowledgeNumber = 0
+	var mutex = &sync.Mutex{}
 
 	go processUDPmsg(processChan, recMsg,msgSentMap)
-	go resendMsg(msgSentMap,udpBroadcastMsg)
+	go resendMsg(msgSentMap,udpBroadcastMsg, mutex)
 
 
 	for{		
@@ -56,8 +58,9 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message){
 				
 				if (msg.MessageType != utilities.MESSAGE_ACKNOWLEDGE) && 
 				(msg.MessageType!=utilities.MESSAGE_HEARTBEAT){
-				
+				mutex.Lock()
 				msgSentMap[msg.Message_Id]=buf
+				mutex.Unlock()
 				}
 
 
@@ -110,12 +113,14 @@ func processUDPmsg(processChan <-chan utilities.Message, rec_msg chan<-utilities
 }
 
 
-func resendMsg(msgMap map[int][]byte, msg chan<-[]byte ) {
+func resendMsg(msgMap map[int][]byte, msg chan<-[]byte, mutex * sync.Mutex ) {
 	for{
 		time.Sleep(1*time.Second)
+	mutex.Lock()
 	for _, v := range msgMap{
 		msg<-v
 		}
+	mutex.Unlock()
 	}
 }
 
