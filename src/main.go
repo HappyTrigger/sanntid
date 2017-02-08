@@ -12,8 +12,8 @@ import (
 
 func main() {
 	
-	sendMsg := make(chan utilities.Message)
-	recMsg := make(chan utilities.Message)
+	sendMsg := make(chan utilities.Message,50)
+	recMsg := make(chan utilities.Message,50)
 
 
 

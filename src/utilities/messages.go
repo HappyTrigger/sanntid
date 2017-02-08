@@ -24,16 +24,15 @@ type Message struct{
 	Message_sender string
 	Message_Id int 
 	MessageType int 
-	Acknowledge Acknowledge
+//	Acknowledge Acknowledge
 	State State
 	NewOrder NewOrder
 	Heartbeat Heartbeat
 }
 
-type Acknowledge struct{
-	Message_recieved_from string
-	Message_Id int
-}
+//type Acknowledge struct{
+//	Message_Id int
+//}
 
 type NewOrder struct{
 	Floor int

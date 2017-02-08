@@ -14,10 +14,11 @@ import (
 )
 
 var localIp string
+var msg_Id int
 
 
 func init() {
-
+	msg_Id = 0
 	var err error
 
 	localIp, err = getLocalIp()
@@ -30,58 +31,68 @@ func init() {
 func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message){
 
 
-
 	log.Println("---Starting network loop---")
 	log.Println("The ip of this computer is: ", localIp)
 
-	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
-	processChan := make(chan utilities.Message)
-	msgSentMap := make(map[int][]byte)
-	var MsgAchnowledgeNumber int
+
+	//Channels
+	//udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
+	processChan := make(chan utilities.Message,50)
+	achnowledge := make(chan utilities.Message,50)
 	
+	msgSentMap := make(map[int]utilities.Message)
 
-	MsgAchnowledgeNumber = 0
+	udpBroadcastMsg,udpRecvMsg := make(chan []byte,50), make(chan udp.RawMessage,50)
+	go func(){
+		for{
+			select{
+			case msg:=<-udpBroadcastMsg: 
+				 udpRecvMsg<-udp.RawMessage{Data:msg,Ip:localIp}
+			}
+		}
+	}()
+
 	var mutex = &sync.Mutex{}
+	var idMutex = &sync.Mutex{}
 
-	go processUDPmsg(processChan, recMsg,msgSentMap)
-	go resendMsg(msgSentMap,udpBroadcastMsg, mutex)
+	go handel_UDP_message(processChan, recMsg,msgSentMap, achnowledge, mutex, idMutex)
+	go resend_Msg(msgSentMap,udpBroadcastMsg, mutex)
+
+
 
 
 	for{		
 		select {
 			case msg := <-sendMsg: 
 				if msg.Message_Id == 0{
-					msg.Message_Id=MsgAchnowledgeNumber+1
+					idMutex.Lock()
+					msg.Message_Id=msg_Id+1
+					msg_Id+=1
+					log.Println("Msg_id sent message: ", msg_Id)
+					idMutex.Unlock()
 				}
 				buf:=utilities.Encoder(msg)
 				udpBroadcastMsg<-buf
 				
-				if (msg.MessageType != utilities.MESSAGE_ACKNOWLEDGE) && 
-				(msg.MessageType!=utilities.MESSAGE_HEARTBEAT){
+				if (msg.MessageType != utilities.MESSAGE_ACKNOWLEDGE) && (msg.MessageType!=utilities.MESSAGE_HEARTBEAT){
 				mutex.Lock()
-				msgSentMap[msg.Message_Id]=buf
+					msgSentMap[msg.Message_Id]=msg // Comfirmation map if message has been recieved, delete order when order is achnowledged
 				mutex.Unlock()
 				}
 
 
-	
-
 
 			case raw_m := <-udpRecvMsg:
-				recievedMessage:=utilities.Decoder(raw_m.Data)
-				recievedMessage.Message_sender=raw_m.Ip
+				msg:=utilities.Decoder(raw_m.Data)
+				msg.Message_sender=raw_m.Ip
+				processChan<-msg
+
+
+
+			case ach_m := <-achnowledge:
+				ach_m.MessageType = utilities.MESSAGE_ACKNOWLEDGE
+				udpBroadcastMsg<-utilities.Encoder(ach_m)
 				
-				processChan<-recievedMessage
-
-				//This needs to be rewritten, just want to test the consept out
-
-				if (recievedMessage.MessageType != utilities.MESSAGE_ACKNOWLEDGE) && 
-				(recievedMessage.MessageType!=utilities.MESSAGE_HEARTBEAT){
-					ach :=utilities.Acknowledge{Message_recieved_from: recievedMessage.Message_sender,Message_Id:recievedMessage.Message_Id}
-					achmsg:= utilities.Message{Acknowledge: ach}
-					buf:=utilities.Encoder(achmsg)
-					udpBroadcastMsg<-buf
-				}
 
 		}
 	}
@@ -89,21 +100,44 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message){
 }
 
 
-func processUDPmsg(processChan <-chan utilities.Message, rec_msg chan<-utilities.Message,  msgMap map[int][]byte ) {
+func handel_UDP_message(msg <-chan utilities.Message,
+	rec_msg chan<-utilities.Message,
+	msgMap map[int]utilities.Message,
+	achnowledge chan<- utilities.Message, mutex * sync.Mutex,
+	id_mutex * sync.Mutex ) {
+	
+
+	//s := make([])
+
+
 	for{
 		select{
-			case msg:=<-processChan:
+			case msg:=<-msg:
 				switch msg.MessageType{
 
 					case utilities.MESSAGE_ACKNOWLEDGE: 
-						log.Println("Message achnoledge from", msg.Message_sender)
+						log.Println("Achnowledgement for message :",msg.Message_Idq)
+						mutex.Lock()
 						delete(msgMap,msg.Message_Id) //Achnowledgement recieved, No need to resend message anymore
+						mutex.Unlock()
 
 					case utilities.MESSAGE_HEARTBEAT: 
 						log.Println("Heartbeat recieved")
 						Heartbeat_recieved(msg)
+					
+
+
+
 					default:
+						achnowledge<-msg
 						rec_msg<-msg //Sends the message to the manager
+						
+
+						id_mutex.Lock()
+						msg_Id+=1 
+						id_mutex.Unlock()
+
+
 
 
 
@@ -113,14 +147,15 @@ func processUDPmsg(processChan <-chan utilities.Message, rec_msg chan<-utilities
 }
 
 
-func resendMsg(msgMap map[int][]byte, msg chan<-[]byte, mutex * sync.Mutex ) {
+func resend_Msg(msgMap map[int]utilities.Message, msg chan<-[]byte, mutex * sync.Mutex ) {
 	for{
-		time.Sleep(1*time.Second)
-	mutex.Lock()
-	for _, v := range msgMap{
-		msg<-v
+		time.Sleep(20*time.Millisecond)
+		mutex.Lock()
+		for _, v := range msgMap{
+			msg<-utilities.Encoder(v)
+
 		}
-	mutex.Unlock()
+		mutex.Unlock()
 	}
 }
 
