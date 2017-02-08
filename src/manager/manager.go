@@ -14,9 +14,9 @@ func Init(){
 	var messageId int
 func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, ConnectionStatus chan utilities.ConnectionStatus ){
 
-
+/*
 	msg2 := utilities.Message{MessageType: utilities.MESSAGE_ORDER}
-/*	
+	
 	go func () {
 		for{
 		msg2.Message_Id = messageId+1
