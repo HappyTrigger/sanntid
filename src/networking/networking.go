@@ -88,7 +88,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 
 
 				encoded_msg:=utilities.Encoder(msg)
-				for i:=0;i<5;i++{
+				for i:=0;i<2;i++{
 					udpBroadCast<-encoded_msg
 					time.Sleep(5*time.Millisecond)
 					forloop:
@@ -115,7 +115,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
     			}
 
 
-				sendToManager<-msg
+				//sendToManager<-msg
 
 		}
 

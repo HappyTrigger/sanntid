@@ -2,7 +2,7 @@ package manager
 
 import(
 	".././utilities"
-	"time"
+	//"time"
 	"log"
 
 )
@@ -22,7 +22,7 @@ func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, Con
 	//	msg2.Message_Id = messageId+1
 	//	messageId+=1
 	//	sendMsg<-msg2
-	//	time.Sleep(100*time.Millisecond)
+	//	time.Sleep(1*time.Second)
 	//	}
 	//}()
 
