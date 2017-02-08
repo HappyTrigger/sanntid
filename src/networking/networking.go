@@ -95,11 +95,13 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 					for{
 						select{
 						case ach:=<-achnowledge_chan:
+							log.Println("Achnowledgement recived")
 							if msg.Message_Id == ach.Message_Id{
 								achnowledge_map[ach.Message_sender] = true
 								}
 							break forloop
-						case <-time.After(10*time.Millisecond):
+						case <-time.After(20*time.Millisecond):
+
 							break forloop
 						}
 					}
@@ -118,7 +120,11 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 
 
     		case <-achnowledge_chan:
+    			log.Println("Dump Achnowledgement")
+
+    		case <- achnowledge_chan:
     			
+
 
 		}
 
@@ -137,11 +143,13 @@ func handel_UDP_message(recivedMsg <-chan utilities.Message,
 	for{
 		select{
 			case msg:=<-recivedMsg:
+				log.Println("Message recived")
 				switch msg.MessageType{
 
 					case utilities.MESSAGE_ACKNOWLEDGE: 
-						log.Println("Achnowledgement for message :",msg.Message_Id)
+						//log.Println("Achnowledgement for message :",msg.Message_Id)
 						achnowledge_chan<-msg
+						log.Println("The system has not hanged here 1")
 
 					case utilities.MESSAGE_HEARTBEAT: 
 						log.Println("Heartbeat recieved")

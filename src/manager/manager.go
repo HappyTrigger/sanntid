@@ -2,7 +2,7 @@ package manager
 
 import(
 	".././utilities"
-	//"time"
+	"time"
 	"log"
 
 )
@@ -14,20 +14,24 @@ func Init(){
 	var messageId int
 func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, ConnectionStatus chan utilities.ConnectionStatus ){
 
-/*
+
 	msg2 := utilities.Message{MessageType: utilities.MESSAGE_ORDER}
 	
 	go func () {
 		for{
+		time.Sleep(1*time.Second)
 		msg2.Message_Id = messageId+1
 		messageId+=1
 		sendMsg<-msg2
-		time.Sleep(2*time.Second)
+		time.Sleep(20*time.Millisecond)
+		msg2.Message_Id = messageId+1
+		sendMsg<-msg2
+		
 		log.Println("Sending Message")
 		}
 	}()
 
-*/
+
 	for{
 		select{
 			case msg:=<-recMsg:
@@ -44,7 +48,8 @@ func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, Con
 					case utilities.MESSAGE_ORDER_COMPLETE:
 						log.Println("Order complete")
 
-
+					default:
+						//Do nothing
 				}
 			case <-ConnectionStatus:
 				log.Println("ConnectionStatus has changed")
