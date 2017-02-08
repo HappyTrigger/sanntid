@@ -14,11 +14,14 @@ import (
 )
 
 var localIp string
-var msg_Id int
+
+
+
+
 
 
 func init() {
-	msg_Id = 0
+
 	var err error
 
 	localIp, err = getLocalIp()
@@ -29,32 +32,39 @@ func init() {
 }
 
 func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, connection_status chan<-utilities.ConnectionStatus){
-
+	
 
 	log.Println("---Starting network loop---")
 	log.Println("The ip of this computer is: ", localIp)
 
 
+	//status:=true
 
 	//Channels
-	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
+	//udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
 	recivedMsg := make(chan utilities.Message)
 	achnowledge := make(chan utilities.Message)
+	heartbeatmap :=make(map[string]int)
 	
 
-
-//	udpBroadcastMsg,udpRecvMsg := make(chan []byte,50), make(chan udp.RawMessage,50)
-//	go func(){
-//		for{
-//			select{
-//			case msg:=<-udpBroadcastMsg: 
-//				 udpRecvMsg<-udp.RawMessage{Data:msg,Ip:localIp}
-//			}
-//		}
-//	}()
+	//Testing system ////////////////
+	udpBroadcastMsg,udpRecvMsg := make(chan []byte,50), make(chan udp.RawMessage,50)
+	go func(){
+		for{
+			select{
+			case msg:=<-udpBroadcastMsg: 
+				 udpRecvMsg<-udp.RawMessage{Data:msg,Ip:localIp}
+			}
+		}
+	}()
+	////////////////////
+	go SendHeartBeat(udpBroadcastMsg)
+	heartbeatChan:=Heartbeat_recieved(udpBroadcastMsg,connection_status,heartbeatmap)
 
 	go send_udp_message(udpBroadcastMsg,sendMsg,achnowledge,recMsg,connection_status)
-	go handel_UDP_message(recivedMsg, recMsg, achnowledge, udpBroadcastMsg)
+	go handel_UDP_message(recivedMsg, recMsg, achnowledge, udpBroadcastMsg,connection_status,heartbeatmap,heartbeatChan)
+
+
 
 
 
@@ -79,23 +89,21 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 
 
 	achnowledge_map := make(map[string]bool)
- 
-
-
+	
 	for{
 		select{
 			case msg:=<-sendMsg:
 
-
+				msg.Message_origin = localIp
 				encoded_msg:=utilities.Encoder(msg)
-				for i:=0;i<2;i++{
+				for i:=0;i<1;i++{
 					udpBroadCast<-encoded_msg
-					time.Sleep(5*time.Millisecond)
+					time.Sleep(1*time.Millisecond)
 					forloop:
 					for{
 						select{
 						case ach:=<-achnowledge_chan:
-							log.Println("Achnowledgement recived")
+							//log.Println("Achnowledgement recived")
 							if msg.Message_Id == ach.Message_Id{
 								achnowledge_map[ach.Message_sender] = true
 								}
@@ -120,9 +128,8 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 
 
     		case <-achnowledge_chan:
-    			log.Println("Dump Achnowledgement")
-
-    		case <- achnowledge_chan:
+    			//Dump for trivial achnowledgements
+    			log.Println("Achnowledgement came after timeout")
     			
 
 
@@ -135,25 +142,31 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 func handel_UDP_message(recivedMsg <-chan utilities.Message,
 	sendToManager chan<-utilities.Message,
 	achnowledge_chan chan<- utilities.Message,
-	udpBroadCast chan <-[]byte){
+	udpBroadCast chan <-[]byte,
+	connectionStatus chan<- utilities.ConnectionStatus,
+	heartbeat_map map[string]int,
+	heartbeat_chan chan utilities.Message){
 	
-
-
 
 	for{
 		select{
 			case msg:=<-recivedMsg:
-				log.Println("Message recived")
 				switch msg.MessageType{
 
 					case utilities.MESSAGE_ACKNOWLEDGE: 
 						//log.Println("Achnowledgement for message :",msg.Message_Id)
-						achnowledge_chan<-msg
-						log.Println("The system has not hanged here 1")
+						if msg.Message_origin == localIp{
+							achnowledge_chan<-msg
+							log.Println("Achnowledgement recived from :",msg.Message_sender)
+						}else{
+							log.Println("Achnowledgement from another elevator")
+						}
+						
 
 					case utilities.MESSAGE_HEARTBEAT: 
 						log.Println("Heartbeat recieved")
-						Heartbeat_recieved(msg)
+						heartbeat_chan<-msg
+
 
 					default:
 						sendToManager<-msg //Sends the message to the manager

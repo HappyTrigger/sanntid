@@ -19,12 +19,9 @@ func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, Con
 	
 	go func () {
 		for{
-		time.Sleep(1*time.Second)
+		time.Sleep(5*time.Second)
 		msg2.Message_Id = messageId+1
 		messageId+=1
-		sendMsg<-msg2
-		time.Sleep(20*time.Millisecond)
-		msg2.Message_Id = messageId+1
 		sendMsg<-msg2
 		
 		log.Println("Sending Message")
@@ -48,11 +45,21 @@ func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, Con
 					case utilities.MESSAGE_ORDER_COMPLETE:
 						log.Println("Order complete")
 
+
+
 					default:
 						//Do nothing
 				}
-			case <-ConnectionStatus:
+			case comMsg:=<-ConnectionStatus:
 				log.Println("ConnectionStatus has changed")
+				if comMsg.Connection != true{
+					log.Println("Connection with Ip:",comMsg.Ip," has been lost")
+					//Send new connectionstate to elevator for further proccesssing
+				}else{
+					log.Println("Connection with Ip:",comMsg.Ip," has been astablished")
+					//Send new connectionstate to elevator
+				}
+			
 
 		}
 	}

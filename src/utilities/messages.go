@@ -21,6 +21,7 @@ const(
 
 
 type Message struct{
+	Message_origin string
 	Message_sender string
 	Message_Id int 
 	MessageType int 
