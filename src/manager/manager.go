@@ -26,8 +26,8 @@ func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, Con
 		log.Println("Sending Message")
 		}
 	}()
-*/
 
+*/
 	for{
 		select{
 			case msg:=<-recMsg:

@@ -28,7 +28,7 @@ func init() {
 	}
 }
 
-func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, connection_status chan utilities.ConnectionStatus){
+func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, connection_status chan<-utilities.ConnectionStatus){
 
 
 	log.Println("---Starting network loop---")
@@ -38,7 +38,7 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, conne
 
 	//Channels
 	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
-	processChan := make(chan utilities.Message)
+	recivedMsg := make(chan utilities.Message)
 	achnowledge := make(chan utilities.Message)
 	
 
@@ -54,7 +54,7 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, conne
 //	}()
 
 	go send_udp_message(udpBroadcastMsg,sendMsg,achnowledge,recMsg,connection_status)
-	go handel_UDP_message(processChan, recMsg, achnowledge, udpBroadcastMsg)
+	go handel_UDP_message(recivedMsg, recMsg, achnowledge, udpBroadcastMsg)
 
 
 
@@ -64,7 +64,7 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, conne
 			case raw_m := <-udpRecvMsg:
 				msg:=utilities.Decoder(raw_m.Data)
 				msg.Message_sender=raw_m.Ip
-				processChan<-msg
+				recivedMsg<-msg
 		}
 	}
 
@@ -114,8 +114,11 @@ func send_udp_message(udpBroadCast chan<-[]byte,
     				}
     			}
 
-
 				//sendToManager<-msg
+
+
+    		case <-achnowledge_chan:
+    			
 
 		}
 
