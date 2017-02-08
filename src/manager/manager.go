@@ -15,17 +15,18 @@ func Init(){
 func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, ConnectionStatus chan utilities.ConnectionStatus ){
 
 
-	//msg2 := utilities.Message{MessageType: utilities.MESSAGE_ORDER}
-	
-	//go func () {
-	//	for{
-	//	msg2.Message_Id = messageId+1
-	//	messageId+=1
-	//	sendMsg<-msg2
-	//	time.Sleep(1*time.Second)
-	//	}
-	//}()
-
+	msg2 := utilities.Message{MessageType: utilities.MESSAGE_ORDER}
+/*	
+	go func () {
+		for{
+		msg2.Message_Id = messageId+1
+		messageId+=1
+		sendMsg<-msg2
+		time.Sleep(2*time.Second)
+		log.Println("Sending Message")
+		}
+	}()
+*/
 
 	for{
 		select{

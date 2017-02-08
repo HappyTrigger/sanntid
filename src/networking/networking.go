@@ -38,8 +38,8 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, conne
 
 	//Channels
 	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
-	processChan := make(chan utilities.Message,50)
-	achnowledge := make(chan utilities.Message,50)
+	processChan := make(chan utilities.Message)
+	achnowledge := make(chan utilities.Message)
 	
 
 
