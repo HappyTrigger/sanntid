@@ -20,7 +20,7 @@ func main() {
 
 
 	
-	go manager.Run(sendMsg, recMsg)
+	go manager.Run(sendMsg, recMsg, connectionStatus)
 	go networking.Run(sendMsg,recMsg,connectionStatus)
 	go elevator.Run()
 

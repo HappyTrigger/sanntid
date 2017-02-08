@@ -12,19 +12,19 @@ func Init(){
 }
 
 	var messageId int
-func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message ){
+func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, ConnectionStatus chan utilities.ConnectionStatus ){
 
 
-	msg2 := utilities.Message{MessageType: utilities.MESSAGE_ORDER}
+	//msg2 := utilities.Message{MessageType: utilities.MESSAGE_ORDER}
 	
-	go func () {
-		for{
-		msg2.Message_Id = messageId+1
-		messageId+=1
-		sendMsg<-msg2
-		time.Sleep(100*time.Millisecond)
-		}
-	}()
+	//go func () {
+	//	for{
+	//	msg2.Message_Id = messageId+1
+	//	messageId+=1
+	//	sendMsg<-msg2
+	//	time.Sleep(100*time.Millisecond)
+	//	}
+	//}()
 
 
 	for{
@@ -45,6 +45,8 @@ func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message ){
 
 
 				}
+			case <-ConnectionStatus:
+				log.Println("ConnectionStatus has changed")
 
 		}
 	}
