@@ -9,7 +9,7 @@ import (
 	//"strconv"
 	"log"
 	".././utilities"
-	"sync"
+	//"sync"
 
 )
 
@@ -28,134 +28,131 @@ func init() {
 	}
 }
 
-func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message){
+func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, connection_status chan utilities.ConnectionStatus){
 
 
 	log.Println("---Starting network loop---")
 	log.Println("The ip of this computer is: ", localIp)
 
 
+
 	//Channels
-	//udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
+	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
 	processChan := make(chan utilities.Message,50)
 	achnowledge := make(chan utilities.Message,50)
 	
-	msgSentMap := make(map[int]utilities.Message)
 
-	udpBroadcastMsg,udpRecvMsg := make(chan []byte,50), make(chan udp.RawMessage,50)
-	go func(){
-		for{
-			select{
-			case msg:=<-udpBroadcastMsg: 
-				 udpRecvMsg<-udp.RawMessage{Data:msg,Ip:localIp}
-			}
-		}
-	}()
 
-	var mutex = &sync.Mutex{}
-	var idMutex = &sync.Mutex{}
+//	udpBroadcastMsg,udpRecvMsg := make(chan []byte,50), make(chan udp.RawMessage,50)
+//	go func(){
+//		for{
+//			select{
+//			case msg:=<-udpBroadcastMsg: 
+//				 udpRecvMsg<-udp.RawMessage{Data:msg,Ip:localIp}
+//			}
+//		}
+//	}()
 
-	go handel_UDP_message(processChan, recMsg,msgSentMap, achnowledge, mutex, idMutex)
-	go resend_Msg(msgSentMap,udpBroadcastMsg, mutex)
+	go send_udp_message(udpBroadcastMsg,sendMsg,achnowledge,recMsg,connection_status)
+	go handel_UDP_message(processChan, recMsg, achnowledge, udpBroadcastMsg)
 
 
 
 
 	for{		
 		select {
-			case msg := <-sendMsg: 
-				if msg.Message_Id == 0{
-					idMutex.Lock()
-					msg.Message_Id=msg_Id+1
-					msg_Id+=1
-					log.Println("Msg_id sent message: ", msg_Id)
-					idMutex.Unlock()
-				}
-				buf:=utilities.Encoder(msg)
-				udpBroadcastMsg<-buf
-				
-				if (msg.MessageType != utilities.MESSAGE_ACKNOWLEDGE) && (msg.MessageType!=utilities.MESSAGE_HEARTBEAT){
-				mutex.Lock()
-					msgSentMap[msg.Message_Id]=msg // Comfirmation map if message has been recieved, delete order when order is achnowledged
-				mutex.Unlock()
-				}
-
-
-
 			case raw_m := <-udpRecvMsg:
 				msg:=utilities.Decoder(raw_m.Data)
 				msg.Message_sender=raw_m.Ip
 				processChan<-msg
-
-
-
-			case ach_m := <-achnowledge:
-				ach_m.MessageType = utilities.MESSAGE_ACKNOWLEDGE
-				udpBroadcastMsg<-utilities.Encoder(ach_m)
-				
-
 		}
 	}
 
 }
 
-
-func handel_UDP_message(msg <-chan utilities.Message,
-	rec_msg chan<-utilities.Message,
-	msgMap map[int]utilities.Message,
-	achnowledge chan<- utilities.Message, mutex * sync.Mutex,
-	id_mutex * sync.Mutex ) {
+func send_udp_message(udpBroadCast chan<-[]byte,
+	sendMsg <-chan utilities.Message,
+	achnowledge_chan <-chan utilities.Message,
+	sendToManager chan<- utilities.Message,
+	connectionStatusChan chan<- utilities.ConnectionStatus){
 	
 
-	//s := make([])
+
+	achnowledge_map := make(map[string]bool)
+ 
 
 
 	for{
 		select{
-			case msg:=<-msg:
-				switch msg.MessageType{
-
-					case utilities.MESSAGE_ACKNOWLEDGE: 
-						log.Println("Achnowledgement for message :",msg.Message_Idq)
-						mutex.Lock()
-						delete(msgMap,msg.Message_Id) //Achnowledgement recieved, No need to resend message anymore
-						mutex.Unlock()
-
-					case utilities.MESSAGE_HEARTBEAT: 
-						log.Println("Heartbeat recieved")
-						Heartbeat_recieved(msg)
-					
+			case msg:=<-sendMsg:
 
 
+				encoded_msg:=utilities.Encoder(msg)
+				for i:=0;i<5;i++{
+					udpBroadCast<-encoded_msg
+					time.Sleep(5*time.Millisecond)
+					forloop:
+					for{
+						select{
+						case ach:=<-achnowledge_chan:
+							if msg.Message_Id == ach.Message_Id{
+								achnowledge_map[ach.Message_sender] = true
+								}
+							break forloop
+						case <-time.After(10*time.Millisecond):
+							break forloop
+						}
+					}
+				}
 
-					default:
-						achnowledge<-msg
-						rec_msg<-msg //Sends the message to the manager
-						
-
-						id_mutex.Lock()
-						msg_Id+=1 
-						id_mutex.Unlock()
-
-
+				for k, v := range achnowledge_map { 
+    				if v != true{
+    					//K is now inactive/ not responding
+    					connectionStatusChan<-utilities.ConnectionStatus{Ip:k, Connection:false}
+    				}else{
+    					v = false
+    				}
+    			}
 
 
+				sendToManager<-msg
 
-			}
 		}
+
 	}
 }
 
 
-func resend_Msg(msgMap map[int]utilities.Message, msg chan<-[]byte, mutex * sync.Mutex ) {
-	for{
-		time.Sleep(20*time.Millisecond)
-		mutex.Lock()
-		for _, v := range msgMap{
-			msg<-utilities.Encoder(v)
+func handel_UDP_message(recivedMsg <-chan utilities.Message,
+	sendToManager chan<-utilities.Message,
+	achnowledge_chan chan<- utilities.Message,
+	udpBroadCast chan <-[]byte){
+	
 
+
+
+	for{
+		select{
+			case msg:=<-recivedMsg:
+				switch msg.MessageType{
+
+					case utilities.MESSAGE_ACKNOWLEDGE: 
+						log.Println("Achnowledgement for message :",msg.Message_Id)
+						achnowledge_chan<-msg
+
+					case utilities.MESSAGE_HEARTBEAT: 
+						log.Println("Heartbeat recieved")
+						Heartbeat_recieved(msg)
+
+					default:
+						sendToManager<-msg //Sends the message to the manager
+						
+						//Task Send achnolwedge back to sender
+						msg.MessageType = utilities.MESSAGE_ACKNOWLEDGE
+						udpBroadCast<-utilities.Encoder(msg)
+
+			}
 		}
-		mutex.Unlock()
 	}
 }
 

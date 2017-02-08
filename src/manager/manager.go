@@ -11,15 +11,18 @@ func Init(){
 
 }
 
-
+	var messageId int
 func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message ){
+
 
 	msg2 := utilities.Message{MessageType: utilities.MESSAGE_ORDER}
 	
 	go func () {
 		for{
+		msg2.Message_Id = messageId+1
+		messageId+=1
 		sendMsg<-msg2
-		time.Sleep(10*time.Millisecond)
+		time.Sleep(100*time.Millisecond)
 		}
 	}()
 
