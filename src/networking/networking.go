@@ -48,7 +48,7 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, conne
 	
 
 	//Testing system ////////////////
-	udpBroadcastMsg,udpRecvMsg := make(chan []byte,50), make(chan udp.RawMessage,50)
+	udpBroadcastMsg,udpRecvMsg := make(chan []byte), make(chan udp.RawMessage)
 	go func(){
 		for{
 			select{
@@ -96,9 +96,9 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 
 				msg.Message_origin = localIp
 				encoded_msg:=utilities.Encoder(msg)
-				for i:=0;i<1;i++{
+				for i:=0;i<2;i++{
 					udpBroadCast<-encoded_msg
-					time.Sleep(1*time.Millisecond)
+					time.Sleep(20*time.Millisecond)
 					forloop:
 					for{
 						select{
@@ -106,6 +106,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 							//log.Println("Achnowledgement recived")
 							if msg.Message_Id == ach.Message_Id{
 								achnowledge_map[ach.Message_sender] = true
+								log.Println("Achnowledgement for message :",ach.Message_Id, "Origing message_id: ",msg.Message_Id)
 								}
 							break forloop
 						case <-time.After(20*time.Millisecond):
@@ -114,16 +115,17 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 						}
 					}
 				}
-
+				log.Println("Checking if all recived")
 				for k, v := range achnowledge_map { 
     				if v != true{
     					//K is now inactive/ not responding
+    					log.Println("Transfer of files failed, new connection_status")
     					connectionStatusChan<-utilities.ConnectionStatus{Ip:k, Connection:false}
     				}else{
     					v = false
     				}
     			}
-
+    			log.Println("Achnowledgment done")
 				//sendToManager<-msg
 
 

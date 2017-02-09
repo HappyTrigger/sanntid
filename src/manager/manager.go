@@ -19,7 +19,7 @@ func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, Con
 	
 	go func () {
 		for{
-		time.Sleep(5*time.Second)
+		time.Sleep(50*time.Millisecond)
 		msg2.Message_Id = messageId+1
 		messageId+=1
 		sendMsg<-msg2
