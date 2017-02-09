@@ -12,17 +12,17 @@ import (
 
 func main() {
 	
-	sendMsg := make(chan utilities.Message,100)
-	recMsg := make(chan utilities.Message)
+	fromManager := make(chan utilities.Message)
+	toManager := make(chan utilities.Message)
 	connectionStatus := make(chan utilities.ConnectionStatus)
 	//stateIsNew := make(chan bool)
 
 
 
 
-	go manager.Run(sendMsg, recMsg, connectionStatus)
+	go manager.Run(fromManager, toManager, connectionStatus)
 	go elevator.Run()
-	go networking.Run(sendMsg,recMsg,connectionStatus)	
+	go networking.Run(fromManager,toManager,connectionStatus)	
 	for{
 	}
 	log.Println("Exiting program")

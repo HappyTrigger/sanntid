@@ -25,15 +25,11 @@ func Run(sendMsg chan<- utilities.Message,
 		
 		msg2.Message_Id = messageId+1
 		messageId+=1
-		log.Println("Sending message from manager")
-		time.Sleep(1*time.Second)
+		//log.Println("Sending message from manager")
+		time.Sleep(500*time.Millisecond)
 		sendMsg<-msg2
 
-		if messageId<10{
-			sendMsg<-msg2
-			sendMsg<-msg2
-		}
-		
+
 		//log.Println("Sending Message")
 		}
 	}()
@@ -44,7 +40,7 @@ func Run(sendMsg chan<- utilities.Message,
 			case msg:=<-recMsg:
 				switch msg.MessageType{
 					case utilities.MESSAGE_ORDER:
-						log.Println("New order, number ", msg.Message_Id)
+						log.Println("New order from", msg.Message_origin, ". Message-Id = ", msg.Message_Id)
 
 
 
