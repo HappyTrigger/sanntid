@@ -12,19 +12,29 @@ func Init(){
 }
 
 	var messageId int
-func Run(sendMsg chan<- utilities.Message, recMsg <-chan  utilities.Message, ConnectionStatus chan utilities.ConnectionStatus ){
+func Run(sendMsg chan<- utilities.Message,
+	recMsg <-chan  utilities.Message,
+	ConnectionStatus <-chan utilities.ConnectionStatus){
 
-
+	time.Sleep(2*time.Second)
 	msg2 := utilities.Message{MessageType: utilities.MESSAGE_ORDER}
-	
+	//sendMsg<-msg2
+
 	go func () {
 		for{
-		time.Sleep(50*time.Millisecond)
+		
 		msg2.Message_Id = messageId+1
 		messageId+=1
+		log.Println("Sending message from manager")
+		time.Sleep(1*time.Second)
 		sendMsg<-msg2
+
+		if messageId<10{
+			sendMsg<-msg2
+			sendMsg<-msg2
+		}
 		
-		log.Println("Sending Message")
+		//log.Println("Sending Message")
 		}
 	}()
 

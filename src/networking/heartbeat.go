@@ -43,7 +43,7 @@ func Heartbeat_recieved(udpBroadcastMsg chan<-[]byte,
 
 
 	go func() {
-		heartbeatTimer := time.Tick(1*time.Second)
+		heartbeatTimer := time.Tick(2*time.Second)
 		failed_heartbeats := make(map[string]int)
 		connection_map :=  make(map[string]string)
 
@@ -60,7 +60,7 @@ func Heartbeat_recieved(udpBroadcastMsg chan<-[]byte,
     				connection_map[heartbeat.Message_sender]=heartbeat.Message_sender
     				connectionStatus<-utilities.ConnectionStatus{Ip:heartbeat.Message_sender,Connection: true}
     				
-    					log.Println("New elevator found",ok)
+    					log.Println("New elevator found")
 				}
 
 				prev:= heartbeat_map[heartbeat.Message_sender]
@@ -79,6 +79,7 @@ func Heartbeat_recieved(udpBroadcastMsg chan<-[]byte,
 			case <-heartbeatTimer: 
 				for _, val := range connection_map { 
     				failed_heartbeats[val]=failed_heartbeats[val]+1
+    				log.Println("Ip: ",val," Failed heartbeats: ",failed_heartbeats[val])
 					}
 
 					if failed_heartbeats[val]>3{

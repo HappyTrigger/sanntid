@@ -31,7 +31,9 @@ func init() {
 	}
 }
 
-func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, connection_status chan<-utilities.ConnectionStatus){
+func Run(sendMsg <-chan utilities.Message,
+	recMsg chan<- utilities.Message,
+	connection_status chan<-utilities.ConnectionStatus){
 	
 
 	log.Println("---Starting network loop---")
@@ -52,7 +54,7 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, conne
 	go func(){
 		for{
 			select{
-			case msg:=<-udpBroadcastMsg: 
+			case msg:=<-udpBroadcastMsg:
 				 udpRecvMsg<-udp.RawMessage{Data:msg,Ip:localIp}
 			}
 		}
@@ -65,20 +67,21 @@ func Run(sendMsg <-chan utilities.Message,recMsg chan<- utilities.Message, conne
 	go handel_UDP_message(recivedMsg, recMsg, achnowledge, udpBroadcastMsg,connection_status,heartbeatmap,heartbeatChan)
 
 
-
-
-
-
 	for{		
 		select {
 			case raw_m := <-udpRecvMsg:
 				msg:=utilities.Decoder(raw_m.Data)
 				msg.Message_sender=raw_m.Ip
+				//log.Println("UDPRecvMsg")
 				recivedMsg<-msg
 		}
 	}
 
 }
+
+
+
+
 
 func send_udp_message(udpBroadCast chan<-[]byte,
 	sendMsg <-chan utilities.Message,
@@ -88,51 +91,62 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 	
 
 
-	achnowledge_map := make(map[string]bool)
+	achnowledgement_confirmed := make(map[string]bool)
 	
 	for{
 		select{
 			case msg:=<-sendMsg:
+				//log.Println("Sending message")
 
 				msg.Message_origin = localIp
+//				log.Println("Local ip assigned")
 				encoded_msg:=utilities.Encoder(msg)
-				for i:=0;i<2;i++{
+//				log.Println("Encoded message")
+				for i:=0;i<2;i++{ 
 					udpBroadCast<-encoded_msg
-					time.Sleep(20*time.Millisecond)
+//					log.Println("broadcast encoded message")
 					forloop:
 					for{
 						select{
 						case ach:=<-achnowledge_chan:
+//							log.Println("Got achnowledgement")
 							//log.Println("Achnowledgement recived")
 							if msg.Message_Id == ach.Message_Id{
-								achnowledge_map[ach.Message_sender] = true
-								log.Println("Achnowledgement for message :",ach.Message_Id, "Origing message_id: ",msg.Message_Id)
+//								log.Println("got achnowledgement from right ip")
+								achnowledgement_confirmed[ach.Message_sender] = true
+								//log.Println("Achnowledgement for message :",ach.Message_Id, "Origing message_id: ",msg.Message_Id)
 								}
 							break forloop
 						case <-time.After(20*time.Millisecond):
-
+//							log.Println("Time after triggerd")
 							break forloop
 						}
 					}
 				}
-				log.Println("Checking if all recived")
-				for k, v := range achnowledge_map { 
+				//log.Println("Checking if all recived")
+//				log.Println("Map:",achnowledgement_confirmed)
+				for k, v := range achnowledgement_confirmed { 
     				if v != true{
     					//K is now inactive/ not responding
-    					log.Println("Transfer of files failed, new connection_status")
+    					//log.Println("Transfer of files failed, new connection_status")
     					connectionStatusChan<-utilities.ConnectionStatus{Ip:k, Connection:false}
     				}else{
-    					v = false
+    					achnowledgement_confirmed[k]=false
     				}
     			}
-    			log.Println("Achnowledgment done")
-				//sendToManager<-msg
-
-
-    		case <-achnowledge_chan:
-    			//Dump for trivial achnowledgements
-    			log.Println("Achnowledgement came after timeout")
     			
+    			//log.Println("Achnowledgment done")
+  //  			log.Println("Sendtomanager")
+				sendToManager<-msg
+
+
+    			case <-achnowledge_chan:
+    			//Dump for trivial achnowledgements
+    				log.Println("Achnowledgement came after timeout")
+    			
+
+    			default:
+    				//Do nothing
 
 
 		}
@@ -153,13 +167,15 @@ func handel_UDP_message(recivedMsg <-chan utilities.Message,
 	for{
 		select{
 			case msg:=<-recivedMsg:
+			//	log.Println("Recieved message")
 				switch msg.MessageType{
 
 					case utilities.MESSAGE_ACKNOWLEDGE: 
 						//log.Println("Achnowledgement for message :",msg.Message_Id)
 						if msg.Message_origin == localIp{
+							//log.Println("Is it locked here")
 							achnowledge_chan<-msg
-							log.Println("Achnowledgement recived from :",msg.Message_sender)
+							//log.Println("Achnowledgement recived from :",msg.Message_sender)
 						}else{
 							log.Println("Achnowledgement from another elevator")
 						}
@@ -171,10 +187,11 @@ func handel_UDP_message(recivedMsg <-chan utilities.Message,
 
 
 					default:
-						sendToManager<-msg //Sends the message to the manager
+						//sendToManager<-msg //Sends the message to the manager
 						
 						//Task Send achnolwedge back to sender
 						msg.MessageType = utilities.MESSAGE_ACKNOWLEDGE
+				 		log.Println("udpBroadcast achnowledgement")
 						udpBroadCast<-utilities.Encoder(msg)
 
 			}
