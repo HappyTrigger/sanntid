@@ -85,7 +85,7 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 		log.Fatal(err)
 	}
 
-	broadcastChan := make(chan []byte)
+	broadcastChan := make(chan []byte,50)
 	go broadcast(broadcastChan, localListener)
 
 	recieveChan := make(chan RawMessage)
