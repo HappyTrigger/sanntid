@@ -5,7 +5,7 @@ import (
 
 	"./udp"
     //"fmt"
-    "time"
+    //"time"
 	//"strconv"
 	"log"
 	".././utilities"
@@ -45,7 +45,7 @@ func Run(fromManager <-chan utilities.Message,
 	achnowledge := make(chan utilities.Message)
 	connectionLost := make(chan utilities.ConnectionStatus)
 	udBroadcastHeartBeat := make(chan []byte)
-	udpBroadCastAchnowledge := make(chan []byte)
+	//udpBroadCastAchnowledge := make(chan []byte)
 
 	
 
@@ -61,6 +61,8 @@ func Run(fromManager <-chan utilities.Message,
 //	}()
 	////////////////////
 	go SendHeartBeat(udBroadcastHeartBeat)
+	
+/*
 	go send_udp_message(udpBroadcastMsg,
 		fromManager,
 		achnowledge,
@@ -69,7 +71,7 @@ func Run(fromManager <-chan utilities.Message,
 		connectionLost,
 		udBroadcastHeartBeat,
 		udpBroadCastAchnowledge)
-	
+*/	
 	heartbeatChan:=Heartbeat_recieved(udpBroadcastMsg,
 		connection_status,
 		connectionLost)
@@ -78,6 +80,21 @@ func Run(fromManager <-chan utilities.Message,
 
 	for{		
 		select {
+			case msg:=<-fromManager:
+				encodedMsg:=utilities.Encoder(msg)
+				udpBroadcastMsg<-encodedMsg
+
+
+			case <-achnowledge:
+				log.Println("achnowledge")
+    		
+
+    		case heartbeat:=<-udBroadcastHeartBeat:
+    			log.Println("Heartbeat sent")
+    			udpBroadcastMsg<-heartbeat
+
+			
+
 			case raw_m := <-udpRecvMsg:
 				msg:=utilities.Decoder(raw_m.Data)
 				msg.Message_sender=raw_m.Ip
@@ -87,17 +104,15 @@ func Run(fromManager <-chan utilities.Message,
 					case utilities.MESSAGE_ACKNOWLEDGE: 
 
 						if msg.Message_origin == localIp{
-
 							achnowledge<-msg
 						}
 						
 
 					case utilities.MESSAGE_HEARTBEAT: 
-						
 						heartbeatChan<-msg
 
-					case utilities.MESSAGE_ORDER_COMPLETE:
-						toManager<-msg
+					//case utilities.MESSAGE_ORDER_COMPLETE:
+						//toManager<-msg
 
 
 					default:
@@ -116,7 +131,7 @@ func Run(fromManager <-chan utilities.Message,
 
 
 
-
+/*
 
 func send_udp_message(udpBroadCast chan<-[]byte,
 	fromManager <-chan utilities.Message,
@@ -187,6 +202,6 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 }
 
 
-
+*/
 
 

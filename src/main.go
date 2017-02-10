@@ -6,7 +6,7 @@ import (
 	"./networking"
 	"./utilities"
 	"./manager"
-	"./elevator"
+	//"./elevator"
 	"log"
 )
 
@@ -15,15 +15,29 @@ func main() {
 	fromManager := make(chan utilities.Message)
 	toManager := make(chan utilities.Message)
 	connectionStatus := make(chan utilities.ConnectionStatus)
-	//stateIsNew := make(chan bool)
 
 
+	NewState := make(chan utilities.State)
 
-	go manager.Run(fromManager, toManager, connectionStatus)
-	go elevator.Run()
-	go networking.Run(fromManager,toManager,connectionStatus)	
+	DriverEvent := make(chan utilities.NewOrder)
+
+	SendOrderToElevator := make(chan utilities.NewOrder)
+	
+
+
+	go manager.Run(fromManager,
+		toManager, 
+		connectionStatus,
+		NewState,
+		DriverEvent,
+		SendOrderToElevator)
+	
+
+	go networking.Run(fromManager,
+		toManager,
+		connectionStatus)	
 	for{
+
 	}
 	log.Println("Exiting program")
-
 }
