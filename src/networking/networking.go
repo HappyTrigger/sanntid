@@ -88,13 +88,15 @@ func Run(fromManager <-chan utilities.Message,
 						//log.Println("Heartbeat recieved")
 						heartbeatChan<-msg
 
+					case utilities.MESSAGE_ORDER_COMPLETE:
+						toManager<-msg
+
 
 					default:
 						toManager<-msg //Sends the message to the manager
 						
 						//Task Send achnolwedge back to sender
 						msg.MessageType = utilities.MESSAGE_ACKNOWLEDGE
-				 		//log.Println("udpBroadcast achnowledgement")
 						udpBroadcastMsg<-utilities.Encoder(msg)
 				}
 		}
@@ -137,6 +139,8 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 								}
 							break forloop
 						case <-time.After(20*time.Millisecond):
+							log.Println("Achnowledgement timed out")
+							log.Println("Map:",achnowledgement_confirmed)
 							break forloop
 						}
 					}
@@ -146,7 +150,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 				for k, v := range achnowledgement_confirmed { 
     				if v != true{
     					//K is now inactive/ not responding
-    					//log.Println("Transfer of files failed, new connection_status")
+    					log.Println("Transfer of files failed, new connection_status")
     					connectionLost<-utilities.ConnectionStatus{Ip:k, Connection:false}
     				}else{
     					achnowledgement_confirmed[k]=false
@@ -155,7 +159,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
     			
     			//log.Println("Achnowledgment done")
   //  			log.Println("Sendtomanager")
-				//sendToManager<-msg
+				sendToManager<-msg
 
     		case <-achnowledge_chan:
     			log.Println("Achnowledgement came after timeout")

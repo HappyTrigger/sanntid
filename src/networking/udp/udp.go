@@ -107,7 +107,8 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 					if rawMsg.Ip != localIp {
 						udpRecvMsg <- rawMsg
 					}
-
+			default:
+				// 
 				
 			}
 		}

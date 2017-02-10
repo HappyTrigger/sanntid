@@ -24,8 +24,7 @@ func SendHeartBeat(udpBroadcastMsg chan<-[]byte){
 				udpBroadcastMsg<-msg
 
 				udpHeartBeatNum++
-				//case<-stop:
-				//	return
+
 
 			}
 		}
@@ -48,9 +47,6 @@ func Heartbeat_recieved(udpBroadcastMsg chan<-[]byte,
 		connection_map :=  make(map[string]string)
 		heartbeat_map := make(map[string]int)
 
-		
-		//var val string
-
 		for{
 
 			select{
@@ -58,6 +54,7 @@ func Heartbeat_recieved(udpBroadcastMsg chan<-[]byte,
 
 				if _, ok := connection_map[heartbeat.Message_sender]; !ok {
     				connection_map[heartbeat.Message_sender]=heartbeat.Message_sender
+    				heartbeat_map[heartbeat.Message_sender] = heartbeat.Heartbeat.Counter
     				connectionStatus<-utilities.ConnectionStatus{Ip:heartbeat.Message_sender,Connection: true}
     				
     					log.Println("New elevator found")
@@ -92,6 +89,9 @@ func Heartbeat_recieved(udpBroadcastMsg chan<-[]byte,
 			case conMsg:=<-connectionLost:
 				connectionStatus<-conMsg
 				delete(connection_map,conMsg.Ip)
+
+			default:
+				//
 			}
 		}
 	}()

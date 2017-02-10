@@ -19,7 +19,6 @@ func main() {
 
 
 
-
 	go manager.Run(fromManager, toManager, connectionStatus)
 	go elevator.Run()
 	go networking.Run(fromManager,toManager,connectionStatus)	
