@@ -2,8 +2,8 @@ package elevator
 
 import (
 	//"./networking"
-	".././utilities"
-	".././manager"
+	//".././utilities"
+	//".././manager"
 	//"log"
 )
 
@@ -14,7 +14,7 @@ func Init() {
 	// "let the manager write the InternalOrders in the case where rebooting and
 	//another manager gives back the memory of interalorders"
 }
-
+/*
 func Run(NewState chan<- utilities.State,
 	ExtOrderRaised chan<- utilities.NewOrder,
 	TakesExtOrd <-chan utilities.NewOrder,
@@ -23,25 +23,32 @@ func Run(NewState chan<- utilities.State,
 	FloorSensor <-chan int,
 	LightControl chan<- int) {
 
-	go ChangeState(NewState)
+	//go ChangeState(NewState)
 
-	go ControlDriver(MyState)
+	//go ControlDriver(MyState)
 
-for {
-		select {
-		case button := <-ButtonPush:
+//for {
+	//	select {
+	//	case button := <-ButtonPush:
 			//switch button.oo {
 			//case utilities.MESSAGE_ORDER:
 
-			default:
+		//	default:
 				//Do nothing
-			}
+		//	}
+//}//
 }
 
-func ChangeState(NewState chan<- utilities.State) {
-	//get the change of state from buttons, sensors
-}
 
-func ControlDriver(MyState utilities.State) {
+//func ChangeState(NewState chan<- utilities.State) {
+//	//get the change of state from buttons, sensors
+//}
+
+//func ControlDriver(MyState utilities.State) {
 	//get the change of state from buttons, sensors
-}
+//}
+
+
+
+
+*/

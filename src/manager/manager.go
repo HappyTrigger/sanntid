@@ -1,11 +1,11 @@
 package manager
 
 import (
-	"./networking"
+	//"./networking"
 	//".././elevator"
 	".././utilities"
 	"log"
-	"math"
+	//"math"
 	"time"
 )
 
@@ -17,18 +17,13 @@ func Init(ExternalOrdersMap map[utilities.NewOrder]int) {
 }
 
 //network channels
-func Run(sendMsg chan<- utilities.Message,
-	recMsg <-chan utilities.Message,
+func Run(sendToNetwork chan<- utilities.Message,
+	reciveFromNetwork <-chan utilities.Message,
 	ConnectionStatus <-chan utilities.ConnectionStatus,
-	//Elevator
 	NewState <-chan utilities.State,
-	ExtOrderRaised <-chan utilities.NewOrder,
-	TakesExtOrd chan<- utilities.NewOrder,
-	//
-	ExternalOrdersMap map[utilities.NewOrder]int,
-	state_map map[string]utilities.State) {
+	DriverEvent <-chan utilities.NewOrder,
+	SendOrderToElevator chan<- utilities.NewOrder) {
 
-	ExternalOrders := make(map[utilities.NewOrder]int)
 
 	time.Sleep(2 * time.Second)
 	msg_map := make(map[int]utilities.Message)
@@ -37,32 +32,30 @@ func Run(sendMsg chan<- utilities.Message,
 	msg_map[3] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
 	msg_map[4] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
 
-	//sendMsg<-msg2
+	//sendToNetwork<-msg2
 
 	go func() {
 		for {
 			for _, v := range msg_map {
 				v.Message_Id = messageId + 1
 				messageId++
-				sendMsg <- v
+				sendToNetwork <- v
 				log.Println("Sent Order nr", v.Message_Id)
 				time.Sleep(2000 * time.Millisecond)
 			}
 		}
 	}()
 
-	//Manager to Elevator
-	go DistributeOrder(TakesExtOrd)
 
 	for {
 		select {
-		case msg := <-recMsg:
+		case msg := <-reciveFromNetwork:
 			switch msg.MessageType {
 			case utilities.MESSAGE_ORDER:
 				//log.Println("New order from", msg.Message_origin, ". Message-Id = ", msg.Message_Id)
 				msg.MessageType = utilities.MESSAGE_ORDER_COMPLETE
 
-				//sendMsg<-msg
+				//sendToNetwork<-msg
 
 			case utilities.MESSAGE_STATE:
 				log.Println("New State")
@@ -85,18 +78,19 @@ func Run(sendMsg chan<- utilities.Message,
 		default:
 			//
 
+
 		//---------------------------------Elevator to Manager----------------------------------
-		case MyElevator := <-NewState:
+		//case MyElevator := <-NewState:
 			//state_map map[string]utilities.State
-			state_map[networking.localIp] = NewState
-		case MyExtOrd := <-ExtOrderRaised:
+		//	state_map[networking.localIp] = NewState
+		//case MyExtOrd := <-ExtOrderRaised:
 			//I give a key to the order
-			ExternalOrders[ExtOrderRaised] = 10*msg.Order.Floor + math.Abs(msg.Order.Direction)
+			//ExternalOrders[ExtOrderRaised] = 10*msg.Order.Floor + math.Abs(msg.Order.Direction)
 		}
 	}
 
 }
-
+/*
 func Cost() {
 
 }
@@ -106,3 +100,4 @@ func DistributeOrder(TakesExtOrd chan<- utilities.NewOrder) {
 		TakesExtOrd <- AddOrder
 	}
 }
+*/
