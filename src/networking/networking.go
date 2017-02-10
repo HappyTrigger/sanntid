@@ -78,10 +78,6 @@ func Run(fromManager <-chan utilities.Message,
 						if msg.Message_origin == localIp{
 
 							achnowledge<-msg
-							
-						}else{
-							log.Println("Achnowledgement from another elevator")
-						}
 						
 
 					case utilities.MESSAGE_HEARTBEAT: 
