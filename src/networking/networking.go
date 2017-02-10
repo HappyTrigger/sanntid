@@ -145,7 +145,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 								}
 							break forloop
 						case <-time.After(20*time.Millisecond):
-							log.Println("Achnowledgement timed out")
+							//log.Println("Achnowledgement timed out")
 							//log.Println("Map:",achnowledgement_confirmed)
 							break forloop
 						}
@@ -160,6 +160,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
     					connectionLost<-utilities.ConnectionStatus{Ip:k, Connection:false}
     				}else{
     					achnowledgement_confirmed[k]=false
+    					log.Println("Achnowledgement confirmed")
     				}
     			}
     			
@@ -168,7 +169,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 				sendToManager<-msg
 
     		case <-achnowledge_chan:
-    			log.Println("Achnowledgement came after timeout")
+    			//log.Println("Achnowledgement came after timeout")
     			
 
     		default:
