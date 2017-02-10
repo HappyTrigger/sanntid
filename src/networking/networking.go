@@ -78,9 +78,11 @@ func Run(fromManager <-chan utilities.Message,
 						if msg.Message_origin == localIp{
 
 							achnowledge<-msg
+						}
 						
 
 					case utilities.MESSAGE_HEARTBEAT: 
+						
 						heartbeatChan<-msg
 
 					case utilities.MESSAGE_ORDER_COMPLETE:
