@@ -102,7 +102,7 @@ func Run(fromManager <-chan utilities.Message,
 						encodedMsg:=utilities.Encoder(msg)
 						//log.Println("Trying to broadcast ach")
 						udpBroadcastMsg<-encodedMsg
-						log.Println("finished  broadcast ach")
+						//log.Println("finished  broadcast ach")
 				}
 		}
 	}
