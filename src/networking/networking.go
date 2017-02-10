@@ -92,15 +92,15 @@ func Run(fromManager <-chan utilities.Message,
 
 
 					default:
-						log.Println("Is this triggerd often")
+					
 						toManager<-msg //Sends the message to the manager
-						log.Println("Sent to manager")
+				
 						
 						//Task Send achnolwedge back to sender
 						msg.MessageType = utilities.MESSAGE_ACKNOWLEDGE
-						log.Println("encoding achnolwedge")
+						//log.Println("encoding achnolwedge")
 						encodedMsg:=utilities.Encoder(msg)
-						log.Println("Trying to broadcast ach")
+						//log.Println("Trying to broadcast ach")
 						udpBroadcastMsg<-encodedMsg
 						log.Println("finished  broadcast ach")
 				}
@@ -129,7 +129,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 			case msg:=<-fromManager:
 				msg.Message_origin = localIp
 				encoded_msg:=utilities.Encoder(msg)
-				for i:=0;i<2;i++{
+				for i:=0;i<5;i++{
 
 					udpBroadCast<-encoded_msg
 					forloop:
