@@ -94,7 +94,7 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 	
 	log.Println("UDP initialized")
    	
-	udpBroadcastMsg, udpRecvMsg := make(chan []byte), make(chan RawMessage)
+	udpBroadcastMsg, udpRecvMsg := make(chan []byte,50), make(chan RawMessage,50)
 
 
 	go func() {
