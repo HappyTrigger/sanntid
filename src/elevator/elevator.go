@@ -25,7 +25,7 @@ func Run(NewState chan<- utilities.State,
 
 	go ChangeState(NewState)
 
-//	go ControlDriver(MyState)
+	go ControlDriver(MyState)
 
 for {
 		select {

@@ -1,9 +1,11 @@
 package manager
 
 import (
+	"./networking"
 	//".././elevator"
 	".././utilities"
 	"log"
+	"math"
 	"time"
 )
 
@@ -83,11 +85,13 @@ func Run(sendMsg chan<- utilities.Message,
 		default:
 			//
 
-		// Elevator to Manager
+		//---------------------------------Elevator to Manager----------------------------------
 		case MyElevator := <-NewState:
-
+			//state_map map[string]utilities.State
+			state_map[networking.localIp] = NewState
 		case MyExtOrd := <-ExtOrderRaised:
-
+			//I give a key to the order
+			ExternalOrders[ExtOrderRaised] = 10*msg.Order.Floor + math.Abs(msg.Order.Direction)
 		}
 	}
 

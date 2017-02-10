@@ -42,9 +42,10 @@ func Run(fromManager <-chan utilities.Message,
 
 	//Channels
 	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
-
 	achnowledge := make(chan utilities.Message)
 	connectionLost := make(chan utilities.ConnectionStatus)
+	udBroadcastHeartBeat := make(chan []byte)
+	udpBroadCastAchnowledge := make(chan []byte)
 
 	
 
@@ -59,9 +60,19 @@ func Run(fromManager <-chan utilities.Message,
 //		}
 //	}()
 	////////////////////
-	go SendHeartBeat(udpBroadcastMsg)
-	go send_udp_message(udpBroadcastMsg,fromManager,achnowledge,toManager,connection_status,connectionLost)
-	heartbeatChan:=Heartbeat_recieved(udpBroadcastMsg,connection_status,connectionLost)
+	go SendHeartBeat(udBroadcastHeartBeat)
+	go send_udp_message(udpBroadcastMsg,
+		fromManager,
+		achnowledge,
+		toManager,
+		connection_status,
+		connectionLost,
+		udBroadcastHeartBeat,
+		udpBroadCastAchnowledge)
+	
+	heartbeatChan:=Heartbeat_recieved(udpBroadcastMsg,
+		connection_status,
+		connectionLost)
 	
 
 
@@ -90,17 +101,13 @@ func Run(fromManager <-chan utilities.Message,
 
 
 					default:
-					
 						toManager<-msg //Sends the message to the manager
-				
+					
 						
-						//Task Send achnolwedge back to sender
 						msg.MessageType = utilities.MESSAGE_ACKNOWLEDGE
-						//log.Println("encoding achnolwedge")
 						encodedMsg:=utilities.Encoder(msg)
-						//log.Println("Trying to broadcast ach")
 						udpBroadcastMsg<-encodedMsg
-						//log.Println("finished  broadcast ach")
+
 				}
 		}
 	}
@@ -116,7 +123,9 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 	achnowledge_chan <-chan utilities.Message,
 	sendToManager chan<- utilities.Message,
 	connectionStatusChan chan<- utilities.ConnectionStatus,
-	connectionLost chan<- utilities.ConnectionStatus ){
+	connectionLost chan<- utilities.ConnectionStatus,
+	udBroadcastHeartBeat<-chan []byte,
+	udpBroadCastAchnowledge<-chan []byte){
 	
 
 
@@ -134,23 +143,17 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 					for{
 						select{
 						case ach:=<-achnowledge_chan:
-//							log.Println("Got achnowledgement")
-							//log.Println("Achnowledgement recived")
-							if msg.Message_Id == ach.Message_Id{
-//								log.Println("got achnowledgement from right ip")
+							if (msg.Message_Id == ach.Message_Id && 
+								achnowledgement_confirmed[ach.Message_sender] == false){
+								
 								achnowledgement_confirmed[ach.Message_sender] = true
-								//log.Println("Achnowledgement for message :",ach.Message_Id, "Origing message_id: ",msg.Message_Id)
-								}
-							break forloop
-						case <-time.After(20*time.Millisecond):
-							//log.Println("Achnowledgement timed out")
-							//log.Println("Map:",achnowledgement_confirmed)
+								break forloop
+							}
+						case <-time.After(40*time.Millisecond):
 							break forloop
 						}
 					}
 				}
-				//log.Println("Checking if all recived")
-//				log.Println("Map:",achnowledgement_confirmed)
 				for k, v := range achnowledgement_confirmed { 
     				if v != true{
     					//K is now inactive/ not responding
@@ -159,20 +162,23 @@ func send_udp_message(udpBroadCast chan<-[]byte,
     					delete(achnowledgement_confirmed,k)
     				}else{
     					achnowledgement_confirmed[k]=false
+    					sendToManager<-msg
     					log.Println("Achnowledgement confirmed")
     				}
     			}
     			
-    			//log.Println("Achnowledgment done")
-  //  			log.Println("Sendtomanager")
-				sendToManager<-msg
+ 
+				
 
     		case <-achnowledge_chan:
-    			//log.Println("Achnowledgement came after timeout")
-    			
+    			//acknowledge-dump
 
-    		default:
-    				//Do nothing
+
+
+    		case heartbeat:=<-udBroadcastHeartBeat:
+    			udpBroadCast<-heartbeat
+
+   
 
 
 		}
