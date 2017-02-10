@@ -85,7 +85,6 @@ func Run(fromManager <-chan utilities.Message,
 						
 
 					case utilities.MESSAGE_HEARTBEAT: 
-						//log.Println("Heartbeat recieved")
 						heartbeatChan<-msg
 
 					case utilities.MESSAGE_ORDER_COMPLETE:
@@ -99,8 +98,10 @@ func Run(fromManager <-chan utilities.Message,
 						
 						//Task Send achnolwedge back to sender
 						msg.MessageType = utilities.MESSAGE_ACKNOWLEDGE
+						log.Println("encoding achnolwedge")
+						encodedMsg:=utilities.Encoder(msg)
 						log.Println("Trying to broadcast ach")
-						udpBroadcastMsg<-utilities.Encoder(msg)
+						udpBroadcastMsg<-encodedMsg
 						log.Println("finished  broadcast ach")
 				}
 		}
