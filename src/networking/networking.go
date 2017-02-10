@@ -93,6 +93,7 @@ func Run(fromManager <-chan utilities.Message,
 
 
 					default:
+						log.Println("Is this triggerd often")
 						toManager<-msg //Sends the message to the manager
 						
 						//Task Send achnolwedge back to sender
@@ -124,7 +125,8 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 			case msg:=<-fromManager:
 				msg.Message_origin = localIp
 				encoded_msg:=utilities.Encoder(msg)
-				for i:=0;i<2;i++{ 
+				for i:=0;i<2;i++{
+
 					udpBroadCast<-encoded_msg
 					forloop:
 					for{
@@ -140,7 +142,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 							break forloop
 						case <-time.After(20*time.Millisecond):
 							log.Println("Achnowledgement timed out")
-							log.Println("Map:",achnowledgement_confirmed)
+							//log.Println("Map:",achnowledgement_confirmed)
 							break forloop
 						}
 					}

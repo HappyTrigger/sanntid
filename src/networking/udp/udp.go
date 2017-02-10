@@ -101,7 +101,9 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 		for {
 			select {
 			case msg := <-udpBroadcastMsg:
+				log.Println("Trying to broadcast within UDP")
 				broadcastChan <- msg
+				log.Println("Completed broadcast within UDP")
 
 			case rawMsg := <-recieveChan:
 					if rawMsg.Ip != localIp {
