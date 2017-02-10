@@ -20,8 +20,9 @@ func SendHeartBeat(udpBroadcastMsg chan<-[]byte){
 					Heartbeat: utilities.CreateHeartbeat(udpHeartBeatNum)}
 					
 				msg:=utilities.Encoder(data)
-
+				log.Println("sending heartbeat")
 				udpBroadcastMsg<-msg
+				log.Println("Heartbeat sent")
 
 				udpHeartBeatNum++
 

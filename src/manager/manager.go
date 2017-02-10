@@ -15,9 +15,9 @@ func Init(){
 func Run(sendMsg chan<- utilities.Message,
 	recMsg <-chan  utilities.Message,
 	ConnectionStatus <-chan utilities.ConnectionStatus){
-
+/*
 	time.Sleep(2*time.Second)
-/*	msg_map := make(map[int]utilities.Message)
+	msg_map := make(map[int]utilities.Message)
 	msg_map[1] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
 	msg_map[2] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
 	msg_map[3] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
