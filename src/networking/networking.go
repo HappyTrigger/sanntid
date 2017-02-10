@@ -158,6 +158,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
     					//K is now inactive/ not responding
     					log.Println("Transfer of files failed, new connection_status")
     					connectionLost<-utilities.ConnectionStatus{Ip:k, Connection:false}
+    					delete(achnowledgement_confirmed,k)
     				}else{
     					achnowledgement_confirmed[k]=false
     					log.Println("Achnowledgement confirmed")
