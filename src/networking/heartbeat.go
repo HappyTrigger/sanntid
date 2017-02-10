@@ -65,7 +65,6 @@ func Heartbeat_recieved(udpBroadcastMsg chan<-[]byte,
 				current:=heartbeat.Heartbeat.Counter
 				if prev+1 == current{
 					heartbeat_map[heartbeat.Message_sender]=current
-					//log.Println("Recived heartbeat matches")
 					failed_heartbeats[heartbeat.Message_sender]=0
 				}else{
 				 	

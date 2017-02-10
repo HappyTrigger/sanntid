@@ -53,6 +53,8 @@ func broadcast(broadcastChan <-chan []byte, localListener *net.UDPConn) {
 
 	var b bytes.Buffer
 
+
+
 	for msg := range broadcastChan {
 		b.Write(msg)
 		b.WriteRune('\n')
@@ -88,7 +90,7 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 	broadcastChan := make(chan []byte,50)
 	go broadcast(broadcastChan, localListener)
 
-	recieveChan := make(chan RawMessage)
+	recieveChan := make(chan RawMessage,50)
 	go recieve(recieveChan, broadcastListener)
 
 	

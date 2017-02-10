@@ -31,6 +31,7 @@ func Run(sendMsg chan<- utilities.Message,
 				v.Message_Id = messageId +1
 				messageId++
 				sendMsg<-v
+				log.Println("Sent Order nr",v.Message_Id)
 				time.Sleep(2000*time.Millisecond)
 			}
 		}
@@ -42,7 +43,7 @@ func Run(sendMsg chan<- utilities.Message,
 			case msg:=<-recMsg:
 				switch msg.MessageType{
 					case utilities.MESSAGE_ORDER:
-						log.Println("New order from", msg.Message_origin, ". Message-Id = ", msg.Message_Id)
+						//log.Println("New order from", msg.Message_origin, ". Message-Id = ", msg.Message_Id)
 						msg.MessageType=utilities.MESSAGE_ORDER_COMPLETE
 
 						//sendMsg<-msg
@@ -69,6 +70,8 @@ func Run(sendMsg chan<- utilities.Message,
 					log.Println("Connection with Ip:",comMsg.Ip," has been astablished")
 					//Send new connectionstate to elevator
 				}
+			default:
+				// 
 			
 
 		}
