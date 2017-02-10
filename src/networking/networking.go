@@ -95,10 +95,13 @@ func Run(fromManager <-chan utilities.Message,
 					default:
 						log.Println("Is this triggerd often")
 						toManager<-msg //Sends the message to the manager
+						log.Println("Sent to manager")
 						
 						//Task Send achnolwedge back to sender
 						msg.MessageType = utilities.MESSAGE_ACKNOWLEDGE
+						log.Println("Trying to broadcast ach")
 						udpBroadcastMsg<-utilities.Encoder(msg)
+						log.Println("finished  broadcast ach")
 				}
 		}
 	}
