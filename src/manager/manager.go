@@ -31,7 +31,7 @@ func Run(sendMsg chan<- utilities.Message,
 				v.Message_Id = messageId +1
 				messageId++
 				sendMsg<-v
-				time.Sleep(500*time.Millisecond)
+				time.Sleep(2000*time.Millisecond)
 			}
 		}
 	}()

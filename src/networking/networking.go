@@ -155,7 +155,7 @@ func send_udp_message(udpBroadCast chan<-[]byte,
     			
     			//log.Println("Achnowledgment done")
   //  			log.Println("Sendtomanager")
-				sendToManager<-msg
+				//sendToManager<-msg
 
     		case <-achnowledge_chan:
     			log.Println("Achnowledgement came after timeout")
