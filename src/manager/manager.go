@@ -17,20 +17,22 @@ func Run(sendMsg chan<- utilities.Message,
 	ConnectionStatus <-chan utilities.ConnectionStatus){
 
 	time.Sleep(2*time.Second)
-	msg2 := utilities.Message{MessageType: utilities.MESSAGE_ORDER}
+	msg_map := make(map[int]utilities.Message)
+	msg_map[1] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
+	msg_map[2] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
+	msg_map[3] = utilities.Message{MessageType: utilities.MESSAGE_STATE}
+	msg_map[4] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
+					
 	//sendMsg<-msg2
 
 	go func () {
 		for{
-		
-		msg2.Message_Id = messageId+1
-		messageId+=1
-		//log.Println("Sending message from manager")
-		time.Sleep(500*time.Millisecond)
-		sendMsg<-msg2
-
-
-		//log.Println("Sending Message")
+			for _,v:=range msg_map{
+				v.Message_Id = messageId +1
+				messageId++
+				sendMsg<-v
+				time.Sleep(500*time.Millisecond)
+			}
 		}
 	}()
 
@@ -41,7 +43,9 @@ func Run(sendMsg chan<- utilities.Message,
 				switch msg.MessageType{
 					case utilities.MESSAGE_ORDER:
 						log.Println("New order from", msg.Message_origin, ". Message-Id = ", msg.Message_Id)
+						msg.MessageType=utilities.MESSAGE_ORDER_COMPLETE
 
+						//sendMsg<-msg
 
 
 					case utilities.MESSAGE_STATE:

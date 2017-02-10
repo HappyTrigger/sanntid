@@ -41,7 +41,7 @@ func Run(fromManager <-chan utilities.Message,
 
 
 	//Channels
-	//udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
+	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
 
 	achnowledge := make(chan utilities.Message)
 	connectionLost := make(chan utilities.ConnectionStatus)
@@ -49,15 +49,15 @@ func Run(fromManager <-chan utilities.Message,
 	
 
 	//Testing system ////////////////
-	udpBroadcastMsg,udpRecvMsg := make(chan []byte), make(chan udp.RawMessage)
-	go func(){
-		for{
-			select{
-			case msg:=<-udpBroadcastMsg:
-				 udpRecvMsg<-udp.RawMessage{Data:msg,Ip:localIp}
-			}
-		}
-	}()
+//	udpBroadcastMsg,udpRecvMsg := make(chan []byte), make(chan udp.RawMessage)
+//	go func(){
+//		for{
+//			select{
+//			case msg:=<-udpBroadcastMsg:
+//				 udpRecvMsg<-udp.RawMessage{Data:msg,Ip:localIp}
+//			}
+//		}
+//	}()
 	////////////////////
 	go SendHeartBeat(udpBroadcastMsg)
 	go send_udp_message(udpBroadcastMsg,fromManager,achnowledge,toManager,connection_status,connectionLost)
@@ -90,7 +90,7 @@ func Run(fromManager <-chan utilities.Message,
 
 
 					default:
-						//sendToManager<-msg //Sends the message to the manager
+						toManager<-msg //Sends the message to the manager
 						
 						//Task Send achnolwedge back to sender
 						msg.MessageType = utilities.MESSAGE_ACKNOWLEDGE
