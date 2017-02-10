@@ -42,7 +42,6 @@ func Run(fromManager <-chan utilities.Message,
 
 	//Channels
 	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
-
 	achnowledge := make(chan utilities.Message)
 	connectionLost := make(chan utilities.ConnectionStatus)
 	udBroadcastHeartBeat := make(chan []byte)
@@ -137,19 +136,20 @@ func send_udp_message(udpBroadCast chan<-[]byte,
 			case msg:=<-fromManager:
 				msg.Message_origin = localIp
 				encoded_msg:=utilities.Encoder(msg)
-				for i:=0;i<7;i++{
+				for i:=0;i<5;i++{
 
 					udpBroadCast<-encoded_msg
 					forloop:
 					for{
 						select{
 						case ach:=<-achnowledge_chan:
-							if msg.Message_Id == ach.Message_Id{
+							if (msg.Message_Id == ach.Message_Id && 
+								achnowledgement_confirmed[ach.Message_sender] == false){
+								
 								achnowledgement_confirmed[ach.Message_sender] = true
-							
-								}
-							break forloop
-						case <-time.After(20*time.Millisecond):
+								break forloop
+							}
+						case <-time.After(40*time.Millisecond):
 							break forloop
 						}
 					}
@@ -162,26 +162,23 @@ func send_udp_message(udpBroadCast chan<-[]byte,
     					delete(achnowledgement_confirmed,k)
     				}else{
     					achnowledgement_confirmed[k]=false
+    					sendToManager<-msg
     					log.Println("Achnowledgement confirmed")
     				}
     			}
     			
  
-				sendToManager<-msg
+				
 
     		case <-achnowledge_chan:
-    			//log.Println("Achnowledgement came after timeout")
+    			//acknowledge-dump
 
 
 
     		case heartbeat:=<-udBroadcastHeartBeat:
     			udpBroadCast<-heartbeat
 
-    		//case ach:=<-udpBroadCastAchnowledge:
-    			//udpBroadCast<-ach
-
-    		default:
-    				//Do nothing
+   
 
 
 		}
