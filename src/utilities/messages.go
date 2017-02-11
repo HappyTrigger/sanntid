@@ -3,21 +3,19 @@ package utilities
 
 
 const (
-	MESSAGE_ACKNOWLEDGE  	= 0
-	MESSAGE_ORDER 			= 1
-	MESSAGE_STATE 		   	= 2
-	MESSAGE_ORDER_COMPLETE 	= 3
-	MESSAGE_HEARTBEAT		= 4
+	MESSAGE_ACKNOWLEDGE  	= iota
+	MESSAGE_ORDER 			
+	MESSAGE_STATE 		   	
+	MESSAGE_ORDER_COMPLETE 	
+	MESSAGE_HEARTBEAT		
 
 )
 
 const(
-	DIR_UP 		= 1
-	DIR_DOWN 	= -1
-	STANDSTILL 	= 0
+	DIR_UP 		= iota
+	DIR_DOWN 	
+	STANDSTILL 
 )
-
-
 
 
 type Message struct{
@@ -34,6 +32,7 @@ type Message struct{
 type NewOrder struct{
 	Floor int
 	Direction int
+	Command int
 }
 type State struct{
 	CurrentFloor int

@@ -1,12 +1,11 @@
 package manager
 
 import (
-	//"./networking"
-	//".././elevator"
 	".././utilities"
 	"log"
 	//"math"
 	"time"
+	//".././mydriver"
 )
 
 var AddOrder utilities.NewOrder
@@ -41,18 +40,17 @@ func Run(sendToNetwork chan<- utilities.Message,
 				messageId++
 				sendToNetwork <- v
 				log.Println("Sent Order nr", v.Message_Id)
-				time.Sleep(2000 * time.Millisecond)
+				time.Sleep(5000* time.Millisecond)
 			}
 		}
 	}()
-
 
 	for {
 		select {
 		case msg := <-reciveFromNetwork:
 			switch msg.MessageType {
 			case utilities.MESSAGE_ORDER:
-				//log.Println("New order from", msg.Message_origin, ". Message-Id = ", msg.Message_Id)
+				log.Println("New order from", msg.Message_origin, ". Message-Id = ", msg.Message_Id)
 				msg.MessageType = utilities.MESSAGE_ORDER_COMPLETE
 
 				//sendToNetwork<-msg

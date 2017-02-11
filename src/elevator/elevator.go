@@ -1,12 +1,20 @@
 package elevator
 
 import (
-	//"./networking"
-	//".././utilities"
-	//".././manager"
-	//"log"
+	".././utilities"
+	"log"
 )
 
+
+type State int
+
+const(
+	State_Init State = iota
+	State_OnFloor
+	State_Moving
+	State_Idle
+	State_Failiure
+)
 
 
 func Init() {
@@ -14,41 +22,79 @@ func Init() {
 	// "let the manager write the InternalOrders in the case where rebooting and
 	//another manager gives back the memory of interalorders"
 }
-/*
-func Run(NewState chan<- utilities.State,
-	ExtOrderRaised chan<- utilities.NewOrder,
-	TakesExtOrd <-chan utilities.NewOrder,
-	//Driver&Elevator
-	ButtonPush <-chan int,
-	FloorSensor <-chan int,
-	LightControl chan<- int) {
 
-	//go ChangeState(NewState)
 
-	//go ControlDriver(MyState)
+var state State
 
-//for {
-	//	select {
-	//	case button := <-ButtonPush:
-			//switch button.oo {
-			//case utilities.MESSAGE_ORDER:
+func Run(NewState chan<-utilities.State,
+	NewOrder <-chan utilities.NewOrder,
+	SensorEvent <-chan int,
+	StopButton <-chan bool) {
 
-		//	default:
-				//Do nothing
-		//	}
-//}//
+
+
+	state = State_Init
+	log.Println("Starting elevator")
+
+	go StateMachine()
+
+	for{
+
+		select{
+
+			case order:=<-NewOrder:
+				log.Println("New order from manager:",order)
+
+
+
+
+			case sensor:=<-SensorEvent:
+				log.Println("Elevator has reached new floor:",sensor)
+
+			case stop:=<-StopButton:
+				log.Println("Stop butten has been pressed:",stop)
+				state = State_Failiure
+
+
+
+			default:
+				//Do nothing 
+
+			}
+
+
+
+
+
+
+	}
+
+
+
+
+
 }
 
 
-//func ChangeState(NewState chan<- utilities.State) {
-//	//get the change of state from buttons, sensors
-//}
+func StateMachine() {
+	for{
 
-//func ControlDriver(MyState utilities.State) {
-	//get the change of state from buttons, sensors
-//}
+		switch state{
+
+			case State_Init:
+				
+			
+
+			case 	State_Moving:
+			
+
+			case 	State_Idle:
+			
+
+			case 	State_Failiure:
+
+		}
+	}
+}
 
 
-
-
-*/

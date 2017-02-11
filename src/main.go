@@ -6,8 +6,9 @@ import (
 	"./networking"
 	"./utilities"
 	"./manager"
-	//"./elevator"
+	"./elevator"
 	"log"
+	"./mydriver"
 )
 
 func main() {
@@ -25,6 +26,17 @@ func main() {
 	
 
 
+
+	OrderEvent := make(chan driver.OrderEvent)
+	SensorEvent := make(chan int)
+
+	ButtonStop := make(chan bool)
+	OpenDoor := make(chan bool)
+
+
+
+
+
 	go manager.Run(fromManager,
 		toManager, 
 		connectionStatus,
@@ -36,6 +48,14 @@ func main() {
 	go networking.Run(fromManager,
 		toManager,
 		connectionStatus)	
+
+
+	go elevator.Run(NewState,SendOrderToElevator,SensorEvent)
+
+
+	go driver.Init(OrderEvent,SensorEvent,ButtonStop)
+
+
 	for{
 
 	}
