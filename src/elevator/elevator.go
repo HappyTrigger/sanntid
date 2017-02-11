@@ -3,6 +3,8 @@ package elevator
 import (
 	".././utilities"
 	"log"
+	"time"
+	".././mydriver"
 )
 
 
@@ -25,6 +27,7 @@ func Init() {
 
 
 var state State
+var floor int
 
 func Run(NewState chan<-utilities.State,
 	NewOrder <-chan utilities.NewOrder,
@@ -49,7 +52,15 @@ func Run(NewState chan<-utilities.State,
 
 
 			case sensor:=<-SensorEvent:
-				log.Println("Elevator has reached new floor:",sensor)
+				if sensor !=-1{
+					driver.Elev_set_floor_indicator(sensor)
+					driver.Elev_set_motor_direction(driver.MotorStop)
+				}
+
+
+
+
+
 
 			case stop:=<-StopButton:
 				log.Println("Stop butten has been pressed:",stop)
@@ -82,16 +93,34 @@ func StateMachine() {
 		switch state{
 
 			case State_Init:
-				
+				log.Println("Initializing")
+				state=State_OnFloor
+
 			
 
-			case 	State_Moving:
+			case State_Idle:
+
+			case State_OnFloor:
+				log.Println("Stopping")
+				driver.Elev_set_motor_direction(driver.MotorStop)
+				time.Sleep(3*time.Second)
+
+				if floor >=3 {
+					driver.Elev_set_motor_direction(driver.MotorDown)
+				}else{
+					driver.Elev_set_motor_direction(driver.MotorUp)
+				}
+				log.Println("Driving")
+
+
+
+
+
+
 			
 
-			case 	State_Idle:
-			
+			case State_Failiure:
 
-			case 	State_Failiure:
 
 		}
 	}

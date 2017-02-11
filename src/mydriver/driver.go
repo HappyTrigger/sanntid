@@ -24,10 +24,12 @@ func pollFloorSensor(sensorEventChan chan<- int) {
 
 	for {
 		sensorSignal := elev_get_floor_sensor_signal()
-
+        log.Println("POlling")
 		if state != sensorSignal {
 			state = sensorSignal
+            log.Println("Sending new state")
 			sensorEventChan <- state
+            log.Println("New state sent")
 		}
 		time.Sleep(PollInterval)
 	}
@@ -90,6 +92,22 @@ func init(){
 
     Elev_set_stop_lamp(false)
     Elev_set_door_open_lamp(false)
+    Elev_set_motor_direction(MotorDown)
+
+    timeout := time.After(10 * time.Second)
+
+    for elev_get_floor_sensor_signal() == InvalidFloor {
+        select {
+        case <-timeout:
+            log.Fatal("Timeout in driver. Did not get to valid floor in time.")
+            os.Exit(1)
+        default:
+        }
+    }
+
+    Elev_set_floor_indicator(elev_get_floor_sensor_signal())
+
+    Elev_set_motor_direction(MotorStop)
 
 }
 

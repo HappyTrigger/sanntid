@@ -38,7 +38,7 @@ func Run(sendToNetwork chan<- utilities.Message,
 			for _, v := range msg_map {
 				v.Message_Id = messageId + 1
 				messageId++
-				sendToNetwork <- v
+				//sendToNetwork <- v
 				log.Println("Sent Order nr", v.Message_Id)
 				time.Sleep(5000* time.Millisecond)
 			}
@@ -50,9 +50,9 @@ func Run(sendToNetwork chan<- utilities.Message,
 		case msg := <-reciveFromNetwork:
 			switch msg.MessageType {
 			case utilities.MESSAGE_ORDER:
-				log.Println("New order from", msg.Message_origin, ". Message-Id = ", msg.Message_Id)
-				msg.MessageType = utilities.MESSAGE_ORDER_COMPLETE
-
+				//log.Println("New order from", msg.Message_origin, ". Message-Id = ", msg.Message_Id)
+				//msg.MessageType = utilities.MESSAGE_ORDER_COMPLETE
+				SendOrderToElevator<-msg.NewOrder
 				//sendToNetwork<-msg
 
 			case utilities.MESSAGE_STATE:

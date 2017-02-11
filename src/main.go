@@ -31,7 +31,7 @@ func main() {
 	SensorEvent := make(chan int)
 
 	ButtonStop := make(chan bool)
-	OpenDoor := make(chan bool)
+	//OpenDoor := make(chan bool)
 
 
 
@@ -45,16 +45,18 @@ func main() {
 		SendOrderToElevator)
 	
 
+
+
+	driver.Init(OrderEvent,SensorEvent,ButtonStop)
+	
+
+	go elevator.Run(NewState,SendOrderToElevator,SensorEvent,ButtonStop)
+
+
+
 	go networking.Run(fromManager,
 		toManager,
 		connectionStatus)	
-
-
-	go elevator.Run(NewState,SendOrderToElevator,SensorEvent)
-
-
-	go driver.Init(OrderEvent,SensorEvent,ButtonStop)
-
 
 	for{
 

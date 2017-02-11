@@ -90,7 +90,7 @@ func Run(fromManager <-chan utilities.Message,
     		
 
     		case heartbeat:=<-udBroadcastHeartBeat:
-    			log.Println("Heartbeat sent")
+    			//log.Println("Heartbeat sent")
     			udpBroadcastMsg<-heartbeat
 
 			
