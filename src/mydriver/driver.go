@@ -23,13 +23,11 @@ func pollFloorSensor(sensorEventChan chan<- int) {
 	state := -1
 
 	for {
-		sensorSignal := elev_get_floor_sensor_signal()
-        log.Println("POlling")
+		sensorSignal := Elev_get_floor_sensor_signal()
+        //log.Println("POlling")
 		if state != sensorSignal {
 			state = sensorSignal
-            log.Println("Sending new state")
 			sensorEventChan <- state
-            log.Println("New state sent")
 		}
 		time.Sleep(PollInterval)
 	}
@@ -45,7 +43,7 @@ func pollButtons(order chan<- OrderEvent) {
 				if isPressed[ButtonType(button)][f] != elev_get_button_signal(ButtonType(button),f) {
 					isPressed[ButtonType(button)][f] = !isPressed[ButtonType(button)][f]
 					if isPressed[ButtonType(button)][f] {
-						order <- OrderEvent{f, ButtonType(button)}
+						order <- OrderEvent{f, ButtonType(button),0}
 					}
 				}
 			}
@@ -96,7 +94,7 @@ func init(){
 
     timeout := time.After(10 * time.Second)
 
-    for elev_get_floor_sensor_signal() == InvalidFloor {
+    for Elev_get_floor_sensor_signal() == InvalidFloor {
         select {
         case <-timeout:
             log.Fatal("Timeout in driver. Did not get to valid floor in time.")
@@ -105,9 +103,10 @@ func init(){
         }
     }
 
-    Elev_set_floor_indicator(elev_get_floor_sensor_signal())
+
 
     Elev_set_motor_direction(MotorStop)
+    Elev_set_floor_indicator(Elev_get_floor_sensor_signal())
 
 }
 
@@ -228,7 +227,7 @@ func elev_get_button_signal(button ButtonType,floor int) bool {
 }
 
 
-func elev_get_floor_sensor_signal() int {
+func Elev_get_floor_sensor_signal() int {
     switch{
         case io.ReadBit(SENSOR_FLOOR1)!=0:
             return 0 

@@ -7,59 +7,81 @@ import (
 	"./utilities"
 	"./manager"
 	"./elevator"
-	"log"
+	//"log"
 	"./mydriver"
+	//"os"
+	//"os/signal"
 )
 
 func main() {
 	
-	fromManager := make(chan utilities.Message)
-	toManager := make(chan utilities.Message)
-	connectionStatus := make(chan utilities.ConnectionStatus)
+	FromManager := make(chan utilities.Message)
+	ToManager := make(chan utilities.Message)
+	ConnectionStatus := make(chan utilities.ConnectionStatus)
 
 
 	NewState := make(chan utilities.State)
 
-	DriverEvent := make(chan utilities.NewOrder)
 
-	SendOrderToElevator := make(chan utilities.NewOrder)
+	SendOrderToElevator := make(chan driver.OrderEvent)
 	
 
-
-
-	OrderEvent := make(chan driver.OrderEvent)
+	DriverEvent := make(chan driver.OrderEvent)
 	SensorEvent := make(chan int)
 
 	ButtonStop := make(chan bool)
-	//OpenDoor := make(chan bool)
+	DoorOpen := make(chan bool)
+	DoorClosed := make(chan bool)
+
+	ReachedNewFloor := make(chan int)
+	ElevatorEmergency := make(chan bool)
 
 
 
 
 
-	go manager.Run(fromManager,
-		toManager, 
-		connectionStatus,
+
+	go manager.Run(
+		FromManager,
+		ToManager, 
+		ConnectionStatus,
 		NewState,
 		DriverEvent,
-		SendOrderToElevator)
+		SendOrderToElevator,
+		DoorOpen,
+		DoorClosed,
+		ElevatorEmergency)
 	
 
 
 
-	driver.Init(OrderEvent,SensorEvent,ButtonStop)
+	driver.Init(DriverEvent,SensorEvent,ButtonStop)
 	
 
-	go elevator.Run(NewState,SendOrderToElevator,SensorEvent,ButtonStop)
+	go elevator.Run(NewState,
+		SendOrderToElevator,
+		SensorEvent,ButtonStop,
+		DoorOpen,
+		DoorClosed,
+		ReachedNewFloor,
+		ElevatorEmergency)
 
 
 
-	go networking.Run(fromManager,
-		toManager,
-		connectionStatus)	
+	go networking.Run(FromManager,
+		ToManager,
+		ConnectionStatus)	
+/*
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		driver.Elev_set_motor_direction(driver.MotorStop)
+		log.Fatal("[FATAL]\tUser terminated program")
 
+		}()
+*/
 	for{
 
 	}
-	log.Println("Exiting program")
 }

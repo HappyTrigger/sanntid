@@ -76,11 +76,14 @@ func Run(fromManager <-chan utilities.Message,
 		connection_status,
 		connectionLost)
 	
-
+	message_id:= 0
 
 	for{		
 		select {
 			case msg:=<-fromManager:
+				msg.Message_Id = message_id
+				message_id+=1
+				toManager<-msg
 				encodedMsg:=utilities.Encoder(msg)
 				udpBroadcastMsg<-encodedMsg
 
@@ -100,6 +103,7 @@ func Run(fromManager <-chan utilities.Message,
 				msg.Message_sender=raw_m.Ip
 
 
+
 				switch msg.MessageType{
 					case utilities.MESSAGE_ACKNOWLEDGE: 
 
@@ -116,6 +120,8 @@ func Run(fromManager <-chan utilities.Message,
 
 
 					default:
+
+						log.Println("Sending recieved message to manager")
 						toManager<-msg //Sends the message to the manager
 					
 						

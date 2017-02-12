@@ -5,7 +5,7 @@ import (
 	"log"
 	//"math"
 	"time"
-	//".././mydriver"
+	".././mydriver"
 )
 
 var AddOrder utilities.NewOrder
@@ -19,44 +19,39 @@ func Init(ExternalOrdersMap map[utilities.NewOrder]int) {
 func Run(sendToNetwork chan<- utilities.Message,
 	reciveFromNetwork <-chan utilities.Message,
 	ConnectionStatus <-chan utilities.ConnectionStatus,
-	NewState <-chan utilities.State,
-	DriverEvent <-chan utilities.NewOrder,
-	SendOrderToElevator chan<- utilities.NewOrder) {
+	DriverEvent <-chan driver.OrderEvent,
+	SendOrderToElevator chan<- driver.OrderEvent,
+	DoorOpen <- chan bool,
+	DoorClosed <-chan bool,
+	ElevatorEmergency <-chan bool) {
 
 
 	time.Sleep(2 * time.Second)
-	msg_map := make(map[int]utilities.Message)
-	msg_map[1] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
-	msg_map[2] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
-	msg_map[3] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
-	msg_map[4] = utilities.Message{MessageType: utilities.MESSAGE_ORDER}
 
-	//sendToNetwork<-msg2
 
-	go func() {
-		for {
-			for _, v := range msg_map {
-				v.Message_Id = messageId + 1
-				messageId++
-				//sendToNetwork <- v
-				log.Println("Sent Order nr", v.Message_Id)
-				time.Sleep(5000* time.Millisecond)
-			}
-		}
-	}()
+	LocalIp := networking.GetLocalIp()
+	StateMap := make(map[string]utilities.State)
+	ConnectionMap := make(map[string]bool)
+
+
 
 	for {
 		select {
 		case msg := <-reciveFromNetwork:
 			switch msg.MessageType {
 			case utilities.MESSAGE_ORDER:
-				//log.Println("New order from", msg.Message_origin, ". Message-Id = ", msg.Message_Id)
-				//msg.MessageType = utilities.MESSAGE_ORDER_COMPLETE
-				SendOrderToElevator<-msg.NewOrder
-				//sendToNetwork<-msg
+
+				order:= driver.OrderEvent{Floor:msg.NewOrder.Floor,
+					Button:msg.NewOrder.Button,
+					OrderId:msg.Message_Id}
+
+				log.Println("Recived order from network")
+
+				SendOrderToElevator<-order
+
 
 			case utilities.MESSAGE_STATE:
-				log.Println("New State")
+				StateMap[msg.Message_sender]=msg.State
 
 			case utilities.MESSAGE_ORDER_COMPLETE:
 				log.Println("Order complete")
@@ -64,38 +59,37 @@ func Run(sendToNetwork chan<- utilities.Message,
 			default:
 				//Do nothing
 			}
+
+
+
+
+
+
+
+
+
+
 		case comMsg := <-ConnectionStatus:
 			log.Println("ConnectionStatus has changed")
 			if comMsg.Connection != true {
 				log.Println("Connection with Ip:", comMsg.Ip, " has been lost")
-				//Send new connectionstate to elevator for further proccesssing
+				ConnectionMap[comMsg.Message_sender]=false
+				
 			} else {
 				log.Println("Connection with Ip:", comMsg.Ip, " has been astablished")
-				//Send new connectionstate to elevator
+				ConnectionMap[comMsg.Message_sender]=true
+
 			}
-		default:
-			//
 
 
-		//---------------------------------Elevator to Manager----------------------------------
-		//case MyElevator := <-NewState:
-			//state_map map[string]utilities.State
-		//	state_map[networking.localIp] = NewState
-		//case MyExtOrd := <-ExtOrderRaised:
-			//I give a key to the order
-			//ExternalOrders[ExtOrderRaised] = 10*msg.Order.Floor + math.Abs(msg.Order.Direction)
+		case event:=<-DriverEvent:
+
+
+			newOrder:= utilities.NewOrder{Floor: event.Floor,Button: event.Button }
+			sendMsg:= utilities.Message{NewOrder:newOrder, MessageType: utilities.MESSAGE_ORDER }
+			sendToNetwork<-sendMsg
+			log.Println("Sending orders")
 		}
 	}
-
-}
-/*
-func Cost() {
-
 }
 
-func DistributeOrder(TakesExtOrd chan<- utilities.NewOrder) {
-	if false {
-		TakesExtOrd <- AddOrder
-	}
-}
-*/

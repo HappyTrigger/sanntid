@@ -13,6 +13,7 @@ const(
 type OrderEvent struct{
 	Floor int
 	Button ButtonType 
+	OrderId int
 }
 
 
@@ -21,8 +22,8 @@ type MotorDirection int
 
 const (
 	MotorUp MotorDirection = iota
-	MotorDown
 	MotorStop
+	MotorDown
 )
 
 

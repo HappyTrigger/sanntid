@@ -1,5 +1,9 @@
 package utilities
 
+import(
+	".././mydriver"
+)
+
 
 
 const (
@@ -11,11 +15,6 @@ const (
 
 )
 
-const(
-	DIR_UP 		= iota
-	DIR_DOWN 	
-	STANDSTILL 
-)
 
 
 type Message struct{
@@ -31,8 +30,7 @@ type Message struct{
 
 type NewOrder struct{
 	Floor int
-	Direction int
-	Command int
+	Button driver.ButtonType 
 }
 type State struct{
 	CurrentFloor int
