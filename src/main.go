@@ -33,7 +33,7 @@ func main() {
 	DoorOpen := make(chan bool)
 	DoorClosed := make(chan bool)
 
-	ReachedNewFloor := make(chan int)
+	//ReachedNewFloor := make(chan int)
 	ElevatorEmergency := make(chan bool)
 
 
@@ -45,7 +45,6 @@ func main() {
 		FromManager,
 		ToManager, 
 		ConnectionStatus,
-		NewState,
 		DriverEvent,
 		SendOrderToElevator,
 		DoorOpen,
@@ -60,10 +59,10 @@ func main() {
 
 	go elevator.Run(NewState,
 		SendOrderToElevator,
-		SensorEvent,ButtonStop,
+		SensorEvent,
+		ButtonStop,
 		DoorOpen,
 		DoorClosed,
-		ReachedNewFloor,
 		ElevatorEmergency)
 
 
@@ -71,8 +70,8 @@ func main() {
 	go networking.Run(FromManager,
 		ToManager,
 		ConnectionStatus)	
-/*
-	c := make(chan os.Signal)
+
+	/*c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		<-c

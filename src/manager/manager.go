@@ -6,6 +6,7 @@ import (
 	//"math"
 	"time"
 	".././mydriver"
+	".././networking"
 )
 
 var AddOrder utilities.NewOrder
@@ -30,6 +31,7 @@ func Run(sendToNetwork chan<- utilities.Message,
 
 
 	LocalIp := networking.GetLocalIp()
+	log.Println("Local Ip in manager :",LocalIp)
 	StateMap := make(map[string]utilities.State)
 	ConnectionMap := make(map[string]bool)
 
@@ -73,11 +75,11 @@ func Run(sendToNetwork chan<- utilities.Message,
 			log.Println("ConnectionStatus has changed")
 			if comMsg.Connection != true {
 				log.Println("Connection with Ip:", comMsg.Ip, " has been lost")
-				ConnectionMap[comMsg.Message_sender]=false
+				ConnectionMap[comMsg.Ip]=false
 				
 			} else {
 				log.Println("Connection with Ip:", comMsg.Ip, " has been astablished")
-				ConnectionMap[comMsg.Message_sender]=true
+				ConnectionMap[comMsg.Ip]=true
 
 			}
 

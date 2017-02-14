@@ -25,7 +25,7 @@ func Run(NewState chan<-utilities.State,
 	StopButton <-chan bool,
 	DoorOpen <- chan bool,
 	DoorClosed <-chan bool,
-	ElevatorEmergency <-chan bool)) {
+	ElevatorEmergency <-chan bool) {
 
 
 	state := State_OnFloor
@@ -73,7 +73,7 @@ func Run(NewState chan<-utilities.State,
 		switch state{
 
 			case State_OnFloor:
-
+				
 				orderOnFloor,orderOnNextFloors:=OrderOnTheFloor(Orders,
 					&Direction,
 					lastPassedFloor)
@@ -83,20 +83,23 @@ func Run(NewState chan<-utilities.State,
 
 				}
 				if orderOnNextFloors {
-					
+					state=State_Moving
 					
 				}
 
-				time.Sleep(1*time.Millisecond)
+				time.Sleep(20*time.Millisecond)
 
 
 
 
 
 			case State_Moving:
+				if Direction == driver.Up{
+					driver.Elev_set_motor_direction(driver.MotorUp)
 
-				driver.Elev_set_motor_direction(Direction)
-
+				}else{
+				driver.Elev_set_motor_direction(driver.MotorDown)
+			}
 			case State_Failiure:
 				//
 
@@ -196,9 +199,5 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 			}
 		}
 	}
-	log.Println("Direction:",*Direction)
-	log.Println("OrderOnFloor: ",orderOnFloor)
-	log.Println("orderOnNextFloors: ",orderOnNextFloors)
-
 	return orderOnFloor,orderOnNextFloors
 }
