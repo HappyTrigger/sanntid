@@ -3,7 +3,7 @@ package manager
 import (
 	".././utilities"
 	"log"
-	//"time"
+	"time"
 	".././mydriver"
 	".././network/bcast"
 	".././network/localip"
@@ -28,6 +28,12 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	ElevatorEmergency <-chan bool,
 	elevatorOrderComplete<-chan utilities.NewOrder) {
 	
+
+
+	var id string
+	var checksum int
+	var localIP string
+
 	if id == "" {
 		localIP, err := localip.LocalIP()
 		if err != nil {
@@ -39,11 +45,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 
-	var id string
-	var checksum int
 
 
-	orderMap := make(map[string]utilities.NewOrder)
+
+	orderMap := make(map[int]utilities.NewOrder)
 	unconfirmedOrderMap := make(map[int]utilities.NewOrder)
 	stateMap := make(map[string]utilities.State)
 	orderResend := time.Tick(2*time.Second)
@@ -61,10 +66,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	go bcast.Transmitter(30202, sendOrderToPeers)
 	go bcast.Receiver(30202, reciveOrderFromPeers)
 
-	sendOrderComplete := make(chan utilities.OrderComplete)
-	recOrderComplete := make(chan utilities.OrderComplete)
-	go bcast.Transmitter(30203, sendOrderComplete)
-	go bcast.Receiver(30203, recOrderComplete)
+	sendOrderCompleteToPeers := make(chan utilities.NewOrder)
+	recOrderCompleteFromPeers := make(chan utilities.NewOrder)
+	go bcast.Transmitter(30203, sendOrderCompleteToPeers)
+	go bcast.Receiver(30203, recOrderCompleteFromPeers)
 
 	sendStateToPeers := make(chan utilities.State)
 	recvStateFromPeers := make(chan utilities.State)
@@ -89,21 +94,27 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				Button:msg.Button, OrderId: msg.Checksum}
 
 			orderMap[msg.Checksum]=msg
+			sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum }
 
 			log.Println("Recived order from network")
+			
 			SendOrderToElevator<-order
-			orderId ++
+
 
 		case state:= <-recvStateFromPeers:
-				stateMap[state.IP]=state
+				stateMap[state.Ip]=state
 
 
-		case orderComplete:=<- recOrderComplete:
+		case orderComplete:=<- recOrderCompleteFromPeers:
 			log.Println("Order at Floor:",orderComplete.Floor," Complete")
+			delete(orderMap,orderComplete.Checksum)
+			log.Println(orderMap)
 
 
 		case order:=<-elevatorOrderComplete:
-			sendOrderComplete<-order
+			sendOrderCompleteToPeers<-order
+
+
 
 
 		case p := <-peerUpdateCh:
@@ -126,7 +137,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case <-orderResend:
-			k,v:=range unconfirmedOrderMap{
+			for _,v:=range unconfirmedOrderMap{
 				sendOrderToPeers<-v
 			}
 			

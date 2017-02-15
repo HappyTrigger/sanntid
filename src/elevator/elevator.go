@@ -28,7 +28,6 @@ func Run(NewState chan<-utilities.State,
 	ElevatorEmergency <-chan bool,
 	orderComplete chan<-utilities.NewOrder) {
 
-	var OrderId int
 
 
 	Direction := driver.Down
@@ -42,6 +41,8 @@ func Run(NewState chan<-utilities.State,
 	}
 
 	var doorClose <-chan time.Time
+	var State State
+	State = State_idle
 	doorClose = time.After(3*time.Second)
 
 	for{
@@ -51,10 +52,39 @@ func Run(NewState chan<-utilities.State,
 		case order:=<-NewOrder:
 			Orders[order.OrderId] = order
 			driver.Elev_set_button_lamp(order.Button,order.Floor,true)
-			log.Println("New order in map")
+			log.Println("New order in elevator")
 
-			//Fix some switch state here
 
+			switch State {
+
+				case State_idle:
+				orderOnFloor,orderOnNextFloors:=OrderOnTheFloor(Orders,
+				&Direction,
+				lastPassedFloor)
+				if orderOnFloor !=-1 {
+					driver.Elev_set_motor_direction(driver.MotorStop)
+					driver.Elev_set_door_open_lamp(true)
+					doorClose = time.After(3*time.Second)
+				}else{
+					if orderOnNextFloors{
+						if Direction==driver.Down{
+							driver.Elev_set_motor_direction(driver.MotorDown)
+						}else{
+							driver.Elev_set_motor_direction(driver.MotorUp)
+						}
+						
+					}
+				}
+
+								
+
+
+
+				case State_moving:
+					//Do nothing
+				}
+
+			
 
 
 		case lastPassedFloor = <-SensorEvent:
@@ -71,7 +101,12 @@ func Run(NewState chan<-utilities.State,
 					doorClose = time.After(3*time.Second)
 				}else{
 					if orderOnNextFloors{
-						driver.Elev_set_motor_direction(Direction)
+						if Direction==driver.Down{
+							driver.Elev_set_motor_direction(driver.MotorDown)
+						}else{
+							driver.Elev_set_motor_direction(driver.MotorUp)
+						}
+						
 					}
 				}
 			}
@@ -100,6 +135,10 @@ func Run(NewState chan<-utilities.State,
 					}else{
 						driver.Elev_set_motor_direction(driver.MotorDown)
 					}
+					State=State_moving
+				}else{
+
+					State=State_idle
 				}
 			}
 		}

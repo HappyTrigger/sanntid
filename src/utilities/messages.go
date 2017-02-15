@@ -17,22 +17,17 @@ const (
 
 
 type Achnowledgement struct {
-	checksum int
+	Checksum int
 	Ip string
 }
 
 
 type NewOrder struct{
-
 	Floor int
 	Button driver.ButtonType
-	OrderId int
+	Checksum int
 }
 
-type OrderComplete struct{
-	Floor int
-	Button driver.ButtonType
-}
 
 type State struct{
 	CurrentFloor int

@@ -8,10 +8,9 @@ package elevator
 type State int
 
 const(
-	State_Init State = iota
-	State_OnFloor
-	State_Moving
-	State_Failiure
+	State_idle = iota
+	State_moving
+
 )
 
 /*
