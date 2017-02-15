@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	broadcastAddress = "255.255.255.255:10001"
-	listenPort       = ":30000"
+	broadcastAddress = "255.255.255.255:10701"
+	listenPort       = ":30700"
 )
 
 type RawMessage struct {
@@ -87,16 +87,16 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 		log.Fatal(err)
 	}
 
-	broadcastChan := make(chan []byte,50)
+	broadcastChan := make(chan []byte)
 	go broadcast(broadcastChan, localListener)
 
-	recieveChan := make(chan RawMessage,50)
+	recieveChan := make(chan RawMessage)
 	go recieve(recieveChan, broadcastListener)
 
 	
 	log.Println("UDP initialized")
    	
-	udpBroadcastMsg, udpRecvMsg := make(chan []byte,50), make(chan RawMessage,50)
+	udpBroadcastMsg, udpRecvMsg := make(chan []byte,1), make(chan RawMessage)
 
 
 	go func() {
@@ -116,6 +116,7 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 					}
 			default:
 				// 
+
 				
 			}
 		}
