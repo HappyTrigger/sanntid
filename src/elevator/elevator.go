@@ -119,6 +119,8 @@ func Run(NewState chan<-utilities.State,
 
 
 		case <-doorClose:
+
+
 			driver.Elev_set_door_open_lamp(false)
 
 			orderOnFloor, orderOnNextFloors := 
@@ -165,6 +167,7 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 				orderOnFloor=k //Send orderNumber back
 				driver.Elev_set_button_lamp(v.Button,v.Floor,false)
 				log.Println("Order on floor")
+				orderComplete<-
 				delete(orders,k)
 			}
 			
