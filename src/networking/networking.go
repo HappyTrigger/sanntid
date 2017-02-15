@@ -83,7 +83,7 @@ func Run(fromManager <-chan utilities.Message,
 			case msg:=<-fromManager:
 				msg.Message_Id = message_id
 				message_id+=1
-				toManager<-msg
+				//toManager<-msg
 				encodedMsg:=utilities.Encoder(msg)
 				udpBroadcastMsg<-encodedMsg
 
