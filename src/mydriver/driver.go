@@ -19,7 +19,6 @@ const (
 
 
 func pollFloorSensor(sensorEventChan chan<- int) {
-
 	state := -1
 
 	for {

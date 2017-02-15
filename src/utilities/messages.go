@@ -23,8 +23,10 @@ type Achnowledgement struct {
 
 
 type NewOrder struct{
+
 	Floor int
 	Button driver.ButtonType
+	OrderId int
 }
 
 type OrderComplete struct{
@@ -37,6 +39,7 @@ type State struct{
 	Direction int
 	InternalOrders []int
 	Door_open bool
+	Ip string
 	
 }
 

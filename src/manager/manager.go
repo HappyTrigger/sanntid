@@ -25,10 +25,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	DriverEvent <-chan driver.OrderEvent,
 	DoorOpen <- chan bool,
 	DoorClosed <-chan bool,
-	ElevatorEmergency <-chan bool) {
+	ElevatorEmergency <-chan bool,
+	elevatorOrderComplete<-chan utilities.NewOrder) {
 	
-	var id string
-
 	if id == "" {
 		localIP, err := localip.LocalIP()
 		if err != nil {
@@ -40,42 +39,72 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 
-	// We make a channel for receiving updates on the id's of the peers that are
-	//  alive on the network
-	peerUpdateCh := make(chan peers.PeerUpdate)
-	// We can disable/enable the transmitter after it has been started.
-	// This could be used to signal that we are somehow "unavailable".
-	peerTxEnable := make(chan bool)
-	go peers.Transmitter(15647, id, peerTxEnable)
-	go peers.Receiver(15647, peerUpdateCh)
+	var id string
+	var checksum int
 
+
+	orderMap := make(map[string]utilities.NewOrder)
+	unconfirmedOrderMap := make(map[int]utilities.NewOrder)
+	stateMap := make(map[string]utilities.State)
+	orderResend := time.Tick(2*time.Second)
+
+
+
+
+	peerUpdateCh := make(chan peers.PeerUpdate)
+	peerTxEnable := make(chan bool)
+	go peers.Transmitter(30201, id, peerTxEnable)
+	go peers.Receiver(30201, peerUpdateCh)
 
 	sendOrderToPeers :=make(chan utilities.NewOrder)
 	reciveOrderFromPeers := make(chan utilities.NewOrder)
+	go bcast.Transmitter(30202, sendOrderToPeers)
+	go bcast.Receiver(30202, reciveOrderFromPeers)
 
 	sendOrderComplete := make(chan utilities.OrderComplete)
 	recOrderComplete := make(chan utilities.OrderComplete)
+	go bcast.Transmitter(30203, sendOrderComplete)
+	go bcast.Receiver(30203, recOrderComplete)
+
+	sendStateToPeers := make(chan utilities.State)
+	recvStateFromPeers := make(chan utilities.State)
+	go bcast.Transmitter(30204, sendStateToPeers)
+	go bcast.Receiver(30204, recvStateFromPeers)
+
+	sendAckToPeers:= make(chan utilities.Achnowledgement)
+	recvAckFromPeers := make(chan utilities.Achnowledgement)
+	go bcast.Transmitter(30205, sendAckToPeers)
+	go bcast.Receiver(30205, recvAckFromPeers)
 
 
-	go bcast.Transmitter(16569, sendOrderToPeers)
-	go bcast.Receiver(16569, reciveOrderFromPeers)
 
-	go bcast.Transmitter(16570, sendOrderComplete)
-	go bcast.Receiver(16570, recOrderComplete)
+
 
 
 	for {
+
 		select {
 		case msg := <-reciveOrderFromPeers:
-			
 			order:= driver.OrderEvent{Floor:msg.Floor,
-				Button:msg.Button}
+				Button:msg.Button, OrderId: msg.Checksum}
 
-				log.Println("Recived order from network")
-				SendOrderToElevator<-order
+			orderMap[msg.Checksum]=msg
+
+			log.Println("Recived order from network")
+			SendOrderToElevator<-order
+			orderId ++
+
+		case state:= <-recvStateFromPeers:
+				stateMap[state.IP]=state
+
 
 		case orderComplete:=<- recOrderComplete:
 			log.Println("Order at Floor:",orderComplete.Floor," Complete")
+
+
+		case order:=<-elevatorOrderComplete:
+			sendOrderComplete<-order
+
 
 		case p := <-peerUpdateCh:
 			log.Printf("Peer update:\n")
@@ -86,8 +115,20 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case event:=<-DriverEvent:
-			newOrder:= utilities.NewOrder{Floor: event.Floor,Button: event.Button }
+			checksum = event.Floor*10 + int(event.Button)
+			newOrder:= utilities.NewOrder{Floor: event.Floor,Button: event.Button, Checksum:checksum }
 			sendOrderToPeers<-newOrder
+			unconfirmedOrderMap[newOrder.Checksum]=newOrder
+
+
+		case ack:=<-recvAckFromPeers:
+			delete(unconfirmedOrderMap,ack.Checksum)
+
+
+		case <-orderResend:
+			k,v:=range unconfirmedOrderMap{
+				sendOrderToPeers<-v
+			}
 			
 		}
 	}

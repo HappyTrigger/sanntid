@@ -8,29 +8,35 @@ import (
 	"./elevator"
 	//"log"
 	"./mydriver"
-	//"os"
-	//"os/signal"
+	"os"
+	"os/signal"
 )
 
 func main() {
-	
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func(){
+	    <-c
+	    panic("Ctrl+C")
+	}()
 
 
 
 	NewState := make(chan utilities.State)
 
-
+	//manager
 	DriverEvent := make(chan driver.OrderEvent)
-	SensorEvent := make(chan int)
+	SendOrderToElevator := make(chan driver.OrderEvent)
+	orderComplete :=make(chan utilities.NewOrder)
 
+
+	//Elevator
 	ButtonStop := make(chan bool)
 	DoorOpen := make(chan bool)
 	DoorClosed := make(chan bool)
-
+	SensorEvent := make(chan int)
 	//ReachedNewFloor := make(chan int)
 	ElevatorEmergency := make(chan bool)
-
-	SendOrderToElevator := make(chan driver.OrderEvent)
 
 
 
@@ -41,7 +47,8 @@ func main() {
 		DriverEvent,
 		DoorOpen,
 		DoorClosed,
-		ElevatorEmergency)
+		ElevatorEmergency,
+		orderComplete)
 	
 
 
@@ -55,7 +62,8 @@ func main() {
 		ButtonStop,
 		DoorOpen,
 		DoorClosed,
-		ElevatorEmergency)
+		ElevatorEmergency,
+		orderComplete)
 
 
 
@@ -68,7 +76,7 @@ func main() {
 
 		}()
 */
-	for{
+	select {
 
 	}
 }

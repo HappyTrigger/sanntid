@@ -25,11 +25,12 @@ func Run(NewState chan<-utilities.State,
 	StopButton <-chan bool,
 	DoorOpen <- chan bool,
 	DoorClosed <-chan bool,
-	ElevatorEmergency <-chan bool) {
+	ElevatorEmergency <-chan bool,
+	orderComplete chan<-utilities.NewOrder) {
 
 	var OrderId int
 
-	state := State_OnFloor
+
 	Direction := driver.Down
 
 	lastPassedFloor := driver.Elev_get_floor_sensor_signal()
@@ -40,83 +41,69 @@ func Run(NewState chan<-utilities.State,
 		log.Fatal("[FATAL]\tElevator initialized between floors")
 	}
 
+	var doorClose <-chan time.Time
+	doorClose = time.After(3*time.Second)
+
 	for{
 
 		select{
 
-			case order:=<-NewOrder:
-				Orders[OrderId]=order
-				driver.Elev_set_button_lamp(order.Button,order.Floor,true)
-				log.Println("New order in map")
-				OrderId++
+		case order:=<-NewOrder:
+			Orders[order.OrderId] = order
+			driver.Elev_set_button_lamp(order.Button,order.Floor,true)
+			log.Println("New order in map")
+
+			//Fix some switch state here
 
 
 
+		case lastPassedFloor = <-SensorEvent:
+			driver.Elev_set_floor_indicator(lastPassedFloor)
+			if lastPassedFloor !=-1 {
 
-
-			case sensor:=<-SensorEvent:
-				if sensor !=-1{
-					lastPassedFloor = sensor
-					driver.Elev_set_floor_indicator(lastPassedFloor)
-					state = State_OnFloor
-				}
-
-
-			case stop:=<-StopButton:
-				log.Println("Stop butten has been pressed:",stop)
-				state = State_Failiure
-
-			//case event := <-eventCh:
-
-
-			default:
-				//Do nothing 
-
-			}
-
-		switch state{
-
-			case State_OnFloor:
-				
 				orderOnFloor,orderOnNextFloors:=OrderOnTheFloor(Orders,
-					&Direction,
-					lastPassedFloor)
+				&Direction,
+				lastPassedFloor)
+			
 				if orderOnFloor !=-1 {
 					driver.Elev_set_motor_direction(driver.MotorStop)
 					driver.Elev_set_door_open_lamp(true)
-
-				}
-				if orderOnNextFloors {
-					state=State_Moving
-					
-				}
-
-			/*	// door open
-				go func(){
-
-					<-time.Timer.new().in(2 * seconds)
-					eventCh <- DoorClosed
-				}()
-				*/
-				time.Sleep(20*time.Millisecond)
-
-
-
-
-
-			case State_Moving:
-				if Direction == driver.Up{
-					driver.Elev_set_motor_direction(driver.MotorUp)
-
+					doorClose = time.After(3*time.Second)
 				}else{
-				driver.Elev_set_motor_direction(driver.MotorDown)
+					if orderOnNextFloors{
+						driver.Elev_set_motor_direction(Direction)
+					}
+				}
 			}
-			case State_Failiure:
-				//
 
-			default:
-				//
+
+
+		case stop:=<-StopButton:
+			log.Println("Stop butten has been pressed:",stop)
+
+
+
+		case <-doorClose:
+			driver.Elev_set_door_open_lamp(false)
+
+			orderOnFloor, orderOnNextFloors := 
+				OrderOnTheFloor(Orders, &Direction, lastPassedFloor)
+			
+			if orderOnFloor !=-1 {
+				driver.Elev_set_motor_direction(driver.MotorStop)
+				driver.Elev_set_door_open_lamp(true)
+				doorClose = time.After(3*time.Second)
+			} else {
+				if orderOnNextFloors{
+					if Direction == driver.Up{
+						driver.Elev_set_motor_direction(driver.MotorUp)
+					}else{
+						driver.Elev_set_motor_direction(driver.MotorDown)
+					}
+				}
+			}
 		}
+
 	}
 }
 
