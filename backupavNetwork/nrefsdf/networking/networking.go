@@ -42,36 +42,12 @@ func Run(fromManager <-chan utilities.Message,
 
 	//Channels
 	udpBroadcastMsg,udpRecvMsg:=udp.Init(localIp)
-	achnowledge := make(chan utilities.Message)
 	connectionLost := make(chan utilities.ConnectionStatus)
-	udBroadcastHeartBeat := make(chan []byte)
-	//udpBroadCastAchnowledge := make(chan []byte)
 
+
+	go SendHeartBeat(udpBroadcastMsg)
 	
 
-	//Testing system ////////////////
-//	udpBroadcastMsg,udpRecvMsg := make(chan []byte), make(chan udp.RawMessage)
-//	go func(){
-//		for{
-//			select{
-//			case msg:=<-udpBroadcastMsg:
-//				 udpRecvMsg<-udp.RawMessage{Data:msg,Ip:localIp}
-//			}
-//		}
-//	}()
-	////////////////////
-	go SendHeartBeat(udBroadcastHeartBeat)
-	
-/*
-	go send_udp_message(udpBroadcastMsg,
-		fromManager,
-		achnowledge,
-		toManager,
-		connection_status,
-		connectionLost,
-		udBroadcastHeartBeat,
-		udpBroadCastAchnowledge)
-*/	
 	heartbeatChan:=Heartbeat_recieved(udpBroadcastMsg,
 		connection_status,
 		connectionLost)
@@ -87,16 +63,7 @@ func Run(fromManager <-chan utilities.Message,
 				encodedMsg:=utilities.Encoder(msg)
 				udpBroadcastMsg<-encodedMsg
 
-
-			case <-achnowledge:
-				log.Println("achnowledge")
-    		
-
-    		case heartbeat:=<-udBroadcastHeartBeat:
-    			//log.Println("Heartbeat sent")
-    			udpBroadcastMsg<-heartbeat
-
-			
+	
 
 			case raw_m := <-udpRecvMsg:
 				msg:=utilities.Decoder(raw_m.Data)
@@ -108,7 +75,7 @@ func Run(fromManager <-chan utilities.Message,
 					case utilities.MESSAGE_ACKNOWLEDGE: 
 
 						if msg.Message_origin == localIp{
-							achnowledge<-msg
+							log.Println("Message achnowledge")
 						}
 						
 

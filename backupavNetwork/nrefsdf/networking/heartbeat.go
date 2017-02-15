@@ -86,9 +86,9 @@ func Heartbeat_recieved(udpBroadcastMsg chan<-[]byte,
 
 					}
 				}
-			case conMsg:=<-connectionLost:
-				connectionStatus<-conMsg
-				delete(connection_map,conMsg.Ip)
+			case connectionLostMsg:=<-connectionLost:
+				connectionStatus<-connectionLostMsg
+				delete(connection_map,connectionLostMsg.Ip)
 
 			default:
 				//

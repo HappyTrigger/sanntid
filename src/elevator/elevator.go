@@ -27,6 +27,7 @@ func Run(NewState chan<-utilities.State,
 	DoorClosed <-chan bool,
 	ElevatorEmergency <-chan bool) {
 
+	var OrderId int
 
 	state := State_OnFloor
 	Direction := driver.Down
@@ -44,9 +45,10 @@ func Run(NewState chan<-utilities.State,
 		select{
 
 			case order:=<-NewOrder:
-				Orders[order.OrderId]=order
+				Orders[OrderId]=order
 				driver.Elev_set_button_lamp(order.Button,order.Floor,true)
 				log.Println("New order in map")
+				OrderId++
 
 
 
@@ -63,6 +65,8 @@ func Run(NewState chan<-utilities.State,
 			case stop:=<-StopButton:
 				log.Println("Stop butten has been pressed:",stop)
 				state = State_Failiure
+
+			//case event := <-eventCh:
 
 
 			default:
@@ -87,6 +91,13 @@ func Run(NewState chan<-utilities.State,
 					
 				}
 
+			/*	// door open
+				go func(){
+
+					<-time.Timer.new().in(2 * seconds)
+					eventCh <- DoorClosed
+				}()
+				*/
 				time.Sleep(20*time.Millisecond)
 
 

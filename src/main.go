@@ -3,7 +3,6 @@ package main
 //Pull from https://github.com/johhat/sanntidsheis if needed
 
 import (	
-	"./networking"
 	"./utilities"
 	"./manager"
 	"./elevator"
@@ -15,16 +14,11 @@ import (
 
 func main() {
 	
-	FromManager := make(chan utilities.Message)
-	ToManager := make(chan utilities.Message)
-	ConnectionStatus := make(chan utilities.ConnectionStatus)
+
 
 
 	NewState := make(chan utilities.State)
 
-
-	SendOrderToElevator := make(chan driver.OrderEvent)
-	
 
 	DriverEvent := make(chan driver.OrderEvent)
 	SensorEvent := make(chan int)
@@ -36,17 +30,15 @@ func main() {
 	//ReachedNewFloor := make(chan int)
 	ElevatorEmergency := make(chan bool)
 
+	SendOrderToElevator := make(chan driver.OrderEvent)
 
 
 
 
 
 	go manager.Run(
-		FromManager,
-		ToManager, 
-		ConnectionStatus,
-		DriverEvent,
 		SendOrderToElevator,
+		DriverEvent,
 		DoorOpen,
 		DoorClosed,
 		ElevatorEmergency)
@@ -66,10 +58,6 @@ func main() {
 		ElevatorEmergency)
 
 
-
-	go networking.Run(FromManager,
-		ToManager,
-		ConnectionStatus)	
 
 	/*c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)

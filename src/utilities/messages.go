@@ -16,35 +16,28 @@ const (
 )
 
 
-
-type Message struct{
-	Message_origin string
-	Message_sender string
-	Message_Id int 
-	MessageType int 
-	State State
-	NewOrder NewOrder
-	Heartbeat Heartbeat
+type Achnowledgement struct {
+	checksum int
+	Ip string
 }
 
 
 type NewOrder struct{
 	Floor int
-	Button driver.ButtonType 
+	Button driver.ButtonType
 }
+
+type OrderComplete struct{
+	Floor int
+	Button driver.ButtonType
+}
+
 type State struct{
 	CurrentFloor int
 	Direction int
 	InternalOrders []int
 	Door_open bool
 	
-
-
-}
-
-type ConnectionStatus struct{
-	Ip string
-	Connection bool
 }
 
 
@@ -54,6 +47,7 @@ func CreateHeartbeat(counter int) Heartbeat {
 
 type Heartbeat struct{
 	Counter int
+	Ip string
 }
 
 

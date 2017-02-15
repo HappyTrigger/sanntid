@@ -67,6 +67,7 @@ func broadcast(broadcastChan <-chan []byte, localListener *net.UDPConn) {
 			log.Println(err)
 		}
 	}
+	log.Println("Exiting broadcast")
 }
 
 func Init(localIp string) (chan<- []byte, <-chan RawMessage){
@@ -96,7 +97,7 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 	
 	log.Println("UDP initialized")
    	
-	udpBroadcastMsg, udpRecvMsg := make(chan []byte,1), make(chan RawMessage)
+	udpBroadcastMsg, udpRecvMsg := make(chan []byte), make(chan RawMessage)
 
 
 	go func() {
@@ -106,7 +107,7 @@ func Init(localIp string) (chan<- []byte, <-chan RawMessage){
 				log.Println("Broadcasting UDP")
 			//	log.Println("Trying to broadcast within UDP")
 				broadcastChan <- msg
-				log.Println("Broadcasting UDP")
+				log.Println("Broadcasting UDP Done")
 			//	log.Println("Completed broadcast within UDP")
 
 			case rawMsg := <-recieveChan:

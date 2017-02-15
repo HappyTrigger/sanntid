@@ -3,10 +3,14 @@ package manager
 import (
 	".././utilities"
 	"log"
-	//"math"
-	"time"
+	//"time"
 	".././mydriver"
-	".././networking"
+	".././network/bcast"
+	".././network/localip"
+	".././network/peers"
+	"os"
+	"fmt"
+
 )
 
 var AddOrder utilities.NewOrder
@@ -17,80 +21,74 @@ func Init(ExternalOrdersMap map[utilities.NewOrder]int) {
 }
 
 //network channels
-func Run(sendToNetwork chan<- utilities.Message,
-	reciveFromNetwork <-chan utilities.Message,
-	ConnectionStatus <-chan utilities.ConnectionStatus,
+func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	DriverEvent <-chan driver.OrderEvent,
-	SendOrderToElevator chan<- driver.OrderEvent,
 	DoorOpen <- chan bool,
 	DoorClosed <-chan bool,
 	ElevatorEmergency <-chan bool) {
+	
+	var id string
+
+	if id == "" {
+		localIP, err := localip.LocalIP()
+		if err != nil {
+			log.Println(err)
+			localIP = "DISCONNECTED"
+		}
+		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+	}
 
 
-	time.Sleep(2 * time.Second)
+
+	// We make a channel for receiving updates on the id's of the peers that are
+	//  alive on the network
+	peerUpdateCh := make(chan peers.PeerUpdate)
+	// We can disable/enable the transmitter after it has been started.
+	// This could be used to signal that we are somehow "unavailable".
+	peerTxEnable := make(chan bool)
+	go peers.Transmitter(15647, id, peerTxEnable)
+	go peers.Receiver(15647, peerUpdateCh)
 
 
-	LocalIp := networking.GetLocalIp()
-	log.Println("Local Ip in manager :",LocalIp)
-	StateMap := make(map[string]utilities.State)
-	ConnectionMap := make(map[string]bool)
+	sendOrderToPeers :=make(chan utilities.NewOrder)
+	reciveOrderFromPeers := make(chan utilities.NewOrder)
 
+	sendOrderComplete := make(chan utilities.OrderComplete)
+	recOrderComplete := make(chan utilities.OrderComplete)
+
+
+	go bcast.Transmitter(16569, sendOrderToPeers)
+	go bcast.Receiver(16569, reciveOrderFromPeers)
+
+	go bcast.Transmitter(16570, sendOrderComplete)
+	go bcast.Receiver(16570, recOrderComplete)
 
 
 	for {
 		select {
-		case msg := <-reciveFromNetwork:
-			switch msg.MessageType {
-			case utilities.MESSAGE_ORDER:
-
-				order:= driver.OrderEvent{Floor:msg.NewOrder.Floor,
-					Button:msg.NewOrder.Button,
-					OrderId:msg.Message_Id}
+		case msg := <-reciveOrderFromPeers:
+			
+			order:= driver.OrderEvent{Floor:msg.Floor,
+				Button:msg.Button}
 
 				log.Println("Recived order from network")
-
 				SendOrderToElevator<-order
 
+		case orderComplete:=<- recOrderComplete:
+			log.Println("Order at Floor:",orderComplete.Floor," Complete")
 
-			case utilities.MESSAGE_STATE:
-				StateMap[msg.Message_sender]=msg.State
-
-			case utilities.MESSAGE_ORDER_COMPLETE:
-				log.Println("Order complete")
-
-			default:
-				//Do nothing
-			}
-
-
-
-
-
-
-
-
-
-
-		case comMsg := <-ConnectionStatus:
-			log.Println("ConnectionStatus has changed")
-			if comMsg.Connection != true {
-				log.Println("Connection with Ip:", comMsg.Ip, " has been lost")
-				ConnectionMap[comMsg.Ip]=false
-				
-			} else {
-				log.Println("Connection with Ip:", comMsg.Ip, " has been astablished")
-				ConnectionMap[comMsg.Ip]=true
-
-			}
+		case p := <-peerUpdateCh:
+			log.Printf("Peer update:\n")
+			log.Printf("  Peers:    %q\n", p.Peers)
+			log.Printf("  New:      %q\n", p.New)
+			log.Printf("  Lost:     %q\n", p.Lost)
+			
 
 
 		case event:=<-DriverEvent:
-
-
 			newOrder:= utilities.NewOrder{Floor: event.Floor,Button: event.Button }
-			sendMsg:= utilities.Message{NewOrder:newOrder, MessageType: utilities.MESSAGE_ORDER }
-			sendToNetwork<-sendMsg
-			log.Println("Sending orders")
+			sendOrderToPeers<-newOrder
+			
 		}
 	}
 }
