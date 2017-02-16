@@ -13,7 +13,7 @@ const(
 type OrderEvent struct{
 	Floor int
 	Button ButtonType 
-	OrderId int
+	Checksum int
 }
 
 

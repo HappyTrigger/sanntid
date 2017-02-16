@@ -66,16 +66,6 @@ func main() {
 		orderComplete)
 
 
-
-	/*c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		<-c
-		driver.Elev_set_motor_direction(driver.MotorStop)
-		log.Fatal("[FATAL]\tUser terminated program")
-
-		}()
-*/
 	select {
 
 	}

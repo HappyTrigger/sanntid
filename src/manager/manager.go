@@ -13,14 +13,13 @@ import (
 
 )
 
-var AddOrder utilities.NewOrder
-var messageId int
 
-func Init(ExternalOrdersMap map[utilities.NewOrder]int) {
-	//Initializes the Map of external orders
-}
+const(
+	OrderResendInterval = 500*time.Millisecond
+)
 
-//network channels
+
+
 func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	DriverEvent <-chan driver.OrderEvent,
 	DoorOpen <- chan bool,
@@ -33,6 +32,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	var id string
 	var checksum int
 	var localIP string
+	var currentPeers []string
 
 	if id == "" {
 		localIP, err := localip.LocalIP()
@@ -45,13 +45,11 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 
-
-
-
-	orderMap := make(map[int]utilities.NewOrder)
-	unconfirmedOrderMap := make(map[int]utilities.NewOrder)
+	orderMap := make(map[int]driver.OrderEvent)
+	unconfirmedOrderMap := make(map[int]driver.OrderEvent)
 	stateMap := make(map[string]utilities.State)
-	orderResend := time.Tick(2*time.Second)
+	orderResend := time.Tick(OrderResendInterval)
+
 
 
 
@@ -61,13 +59,13 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	go peers.Transmitter(30201, id, peerTxEnable)
 	go peers.Receiver(30201, peerUpdateCh)
 
-	sendOrderToPeers :=make(chan utilities.NewOrder)
-	reciveOrderFromPeers := make(chan utilities.NewOrder)
+	sendOrderToPeers :=make(chan driver.OrderEvent)
+	reciveOrderFromPeers := make(chan driver.OrderEvent)
 	go bcast.Transmitter(30202, sendOrderToPeers)
 	go bcast.Receiver(30202, reciveOrderFromPeers)
 
-	sendOrderCompleteToPeers := make(chan utilities.NewOrder)
-	recOrderCompleteFromPeers := make(chan utilities.NewOrder)
+	sendOrderCompleteToPeers := make(chan driver.OrderEvent)
+	recOrderCompleteFromPeers := make(chan driver.OrderEvent)
 	go bcast.Transmitter(30203, sendOrderCompleteToPeers)
 	go bcast.Receiver(30203, recOrderCompleteFromPeers)
 
@@ -89,16 +87,29 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	for {
 
 		select {
-		case msg := <-reciveOrderFromPeers:
-			order:= driver.OrderEvent{Floor:msg.Floor,
-				Button:msg.Button, OrderId: msg.Checksum}
 
+			//Should probably rewrite this  so that we can just send and recive a driver.Eventype rather than converting it
+
+		case msg := <-reciveOrderFromPeers:
 			orderMap[msg.Checksum]=msg
 			sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum }
-
 			log.Println("Recived order from network")
+
+			//One should probably store the orders with the time that they were recived
+			// so that we can itirate over them and see if any orders have not been completed 
+			// after some time. This way we can 
+
+			// Or we could have this check in each elevator which sends out an emergency signal if it should be active, 
+			// but isnt registering any state changes
+
+
+
+
+			//Do some calculations on elevator states here, send order to elevator if this elevator is best suited.
+			if orderDelegated(stateMap,msg,currentPeers){
+				SendOrderToElevator<-order
+			}
 			
-			SendOrderToElevator<-order
 
 
 		case state:= <-recvStateFromPeers:
@@ -112,6 +123,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case order:=<-elevatorOrderComplete:
+			delete(orderMap,order.Checksum)
 			sendOrderCompleteToPeers<-order
 
 
@@ -123,12 +135,12 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Printf("  New:      %q\n", p.New)
 			log.Printf("  Lost:     %q\n", p.Lost)
 			
+			currentPeers = p.Peers
 
 
 		case event:=<-DriverEvent:
-			checksum = event.Floor*10 + int(event.Button)
-			newOrder:= utilities.NewOrder{Floor: event.Floor,Button: event.Button, Checksum:checksum }
-			sendOrderToPeers<-newOrder
+			event.Checksum = event.Floor*10 + int(event.Button)
+			sendOrderToPeers<-event
 			unconfirmedOrderMap[newOrder.Checksum]=newOrder
 
 
@@ -143,5 +155,21 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			
 		}
 	}
+}
+
+//order delegation function based on the states this and the other current active elevators
+func orderDelegated(elevatorStates map[string]utilities.State,
+	orderEvent driver.OrderEvent,currentPeers[]string) bool {
+	
+
+	//Create some sort of delegation-algorithm, which bases its decision on the current active peers, 
+	// the status of the peers(Are they moving or idle) and the postition and direction of the active elevators
+
+
+
+
+
+	//returns true if this elevator should take the order, else return false
+	return true
 }
 

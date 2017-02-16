@@ -8,16 +8,9 @@ import (
 )
 
 
-
-
-
-func Init() {
-	// get his position
-	// "let the manager write the InternalOrders in the case where rebooting and
-	//another manager gives back the memory of interalorders"
-}
-
-
+const(
+	DoorOpenTime = 1
+) 
 
 func Run(NewState chan<-utilities.State,
 	NewOrder <-chan driver.OrderEvent,
@@ -26,11 +19,18 @@ func Run(NewState chan<-utilities.State,
 	DoorOpen <- chan bool,
 	DoorClosed <-chan bool,
 	ElevatorEmergency <-chan bool,
-	orderComplete chan<-utilities.NewOrder) {
+	orderComplete chan<-driver.OrderEvent) {
 
 
+
+	
+	var doorClose <-chan time.Time
+	var State State
+	var Direction driver.ButtonType
 
 	Direction := driver.Down
+	State = State_idle
+	doorClose = time.After(DoorOpenTime*time.Second)
 
 	lastPassedFloor := driver.Elev_get_floor_sensor_signal()
 	Orders := make(map[int]driver.OrderEvent)
@@ -40,17 +40,14 @@ func Run(NewState chan<-utilities.State,
 		log.Fatal("[FATAL]\tElevator initialized between floors")
 	}
 
-	var doorClose <-chan time.Time
-	var State State
-	State = State_idle
-	doorClose = time.After(3*time.Second)
+
 
 	for{
 
 		select{
 
 		case order:=<-NewOrder:
-			Orders[order.OrderId] = order
+			Orders[order.Checksum] = order
 			driver.Elev_set_button_lamp(order.Button,order.Floor,true)
 			log.Println("New order in elevator")
 
@@ -59,8 +56,7 @@ func Run(NewState chan<-utilities.State,
 
 				case State_idle:
 				orderOnFloor,orderOnNextFloors:=OrderOnTheFloor(Orders,
-				&Direction,
-				lastPassedFloor)
+				&Direction,lastPassedFloor,orderComplete)
 				if orderOnFloor !=-1 {
 					driver.Elev_set_motor_direction(driver.MotorStop)
 					driver.Elev_set_door_open_lamp(true)
@@ -76,10 +72,6 @@ func Run(NewState chan<-utilities.State,
 					}
 				}
 
-								
-
-
-
 				case State_moving:
 					//Do nothing
 				}
@@ -92,8 +84,7 @@ func Run(NewState chan<-utilities.State,
 			if lastPassedFloor !=-1 {
 
 				orderOnFloor,orderOnNextFloors:=OrderOnTheFloor(Orders,
-				&Direction,
-				lastPassedFloor)
+				&Direction,lastPassedFloor,orderComplete)
 			
 				if orderOnFloor !=-1 {
 					driver.Elev_set_motor_direction(driver.MotorStop)
@@ -124,7 +115,7 @@ func Run(NewState chan<-utilities.State,
 			driver.Elev_set_door_open_lamp(false)
 
 			orderOnFloor, orderOnNextFloors := 
-				OrderOnTheFloor(Orders, &Direction, lastPassedFloor)
+				OrderOnTheFloor(Orders, &Direction, lastPassedFloor,orderComplete)
 			
 			if orderOnFloor !=-1 {
 				driver.Elev_set_motor_direction(driver.MotorStop)
@@ -149,7 +140,9 @@ func Run(NewState chan<-utilities.State,
 }
 
 func OrderOnTheFloor(orders map[int]driver.OrderEvent,
-	Direction *driver.ButtonType,currentFloor int)(int,bool){
+	Direction *driver.ButtonType,
+	currentFloor int,
+	orderComplete chan<-driver.OrderEvent)(int,bool){
 
 
 	//log.Println("Order Checking func started")
@@ -166,17 +159,20 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 			if currentFloor == v.Floor{
 				orderOnFloor=k //Send orderNumber back
 				driver.Elev_set_button_lamp(v.Button,v.Floor,false)
-				log.Println("Order on floor")
+				log.Println("Order on floor confirmed")
+				orderComplete<-v
 				delete(orders,k)
 			}
 			
 			if *Direction == driver.Up{
 				if v.Floor>currentFloor{
 					orderOnNextFloors=true
+					log.Println("Order on the floor above")
 				}
 			}else{
 				if v.Floor<currentFloor{
 					orderOnNextFloors=true
+					log.Println("Order on the floor below")
 				}
 			}
 		}else{
@@ -207,18 +203,19 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 				if currentFloor == v.Floor{
 					orderOnFloor=k //Send orderNumber back
 					driver.Elev_set_button_lamp(v.Button,v.Floor,false)
+					orderComplete<-v
 					delete(orders,k)
-					log.Println("Order on floor")
+					log.Println("Order on floor confirmed")
 				}
 				if *Direction == driver.Up{
 					if v.Floor>currentFloor{
 						orderOnNextFloors=true
-						log.Println("Order Upwoards")
+						log.Println("Order on the floor above")
 					}
 				}else{
 					if v.Floor<currentFloor{
 						orderOnNextFloors=true
-						log.Println("Order Downwards")
+						log.Println("Order on the floor below")
 					}
 				}
 			}else{

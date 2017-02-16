@@ -39,15 +39,6 @@ type State struct{
 }
 
 
-func CreateHeartbeat(counter int) Heartbeat {
-	return Heartbeat{Counter: counter}
-}
-
-type Heartbeat struct{
-	Counter int
-	Ip string
-}
-
 
 
 
