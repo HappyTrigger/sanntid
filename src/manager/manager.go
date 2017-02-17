@@ -17,6 +17,7 @@ import (
 const(
 	OrderResendInterval = 500*time.Millisecond
 )
+	var localIP string
 
 
 
@@ -30,9 +31,16 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 	var id string
-	var checksum int
-	var localIP string
+	var elevatorState utilities.State
 	var currentPeers []string
+
+
+	orderMap := make(map[int]driver.OrderEvent)
+	unconfirmedOrderMap := make(map[int]driver.OrderEvent)
+	stateMap := make(map[string]utilities.State)
+	orderResend := time.Tick(OrderResendInterval)
+
+
 
 	if id == "" {
 		localIP, err := localip.LocalIP()
@@ -42,15 +50,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		}
 		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
-
-
-
-	orderMap := make(map[int]driver.OrderEvent)
-	unconfirmedOrderMap := make(map[int]driver.OrderEvent)
-	stateMap := make(map[string]utilities.State)
-	orderResend := time.Tick(OrderResendInterval)
-
-
 
 
 
@@ -122,9 +121,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Println(orderMap)
 
 
-		case order:=<-elevatorOrderComplete:
-			delete(orderMap,order.Checksum)
-			sendOrderCompleteToPeers<-order
+		case orderComplete:=<-elevatorOrderComplete:
+			delete(orderMap,orderComplete.Checksum)
+			sendOrderCompleteToPeers<-orderComplete
 
 
 
@@ -137,11 +136,24 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			
 			currentPeers = p.Peers
 
+			
+
+
+
 
 		case event:=<-DriverEvent:
-			event.Checksum = event.Floor*10 + int(event.Button)
-			sendOrderToPeers<-event
-			unconfirmedOrderMap[newOrder.Checksum]=newOrder
+			switch event.Button{
+
+				case driver.Internal:	
+					log.Println("internal order")
+
+					//Append the new internal order to the internal order map, then send the new state
+
+				default: 
+					event.Checksum = event.Floor*10 + int(event.Button)
+					sendOrderToPeers<-event
+					unconfirmedOrderMap[newOrder.Checksum]=newOrder
+			}
 
 
 		case ack:=<-recvAckFromPeers:
@@ -158,10 +170,23 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 }
 
 //order delegation function based on the states this and the other current active elevators
-func orderDelegated(elevatorStates map[string]utilities.State,
+func orderDelegated(stateMap map[string]utilities.State,
 	orderEvent driver.OrderEvent,currentPeers[]string) bool {
-	
 
+
+
+	// The elevator with the lowest fitness takes the order
+
+/*
+	fitness := make(map[string]int)
+	for peer,state := range stateMap{
+
+
+
+
+	}
+
+*/	
 	//Create some sort of delegation-algorithm, which bases its decision on the current active peers, 
 	// the status of the peers(Are they moving or idle) and the postition and direction of the active elevators
 

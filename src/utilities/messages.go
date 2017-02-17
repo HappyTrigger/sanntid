@@ -34,6 +34,7 @@ type State struct{
 	Direction int
 	InternalOrders []int
 	Door_open bool
+	Active bool
 	Ip string
 	
 }

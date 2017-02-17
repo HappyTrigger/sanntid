@@ -35,7 +35,6 @@ func main() {
 	DoorOpen := make(chan bool)
 	DoorClosed := make(chan bool)
 	SensorEvent := make(chan int)
-	//ReachedNewFloor := make(chan int)
 	ElevatorEmergency := make(chan bool)
 
 

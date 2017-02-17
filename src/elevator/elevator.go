@@ -9,7 +9,7 @@ import (
 
 
 const(
-	DoorOpenTime = 1
+	DoorOpenTime = 2*time.Second
 ) 
 
 func Run(NewState chan<-utilities.State,
@@ -30,7 +30,7 @@ func Run(NewState chan<-utilities.State,
 
 	Direction := driver.Down
 	State = State_idle
-	doorClose = time.After(DoorOpenTime*time.Second)
+//	doorClose = time.After(DoorOpenTime)
 
 	lastPassedFloor := driver.Elev_get_floor_sensor_signal()
 	Orders := make(map[int]driver.OrderEvent)
@@ -60,7 +60,7 @@ func Run(NewState chan<-utilities.State,
 				if orderOnFloor !=-1 {
 					driver.Elev_set_motor_direction(driver.MotorStop)
 					driver.Elev_set_door_open_lamp(true)
-					doorClose = time.After(3*time.Second)
+					doorClose = time.After(DoorOpenTime)
 				}else{
 					if orderOnNextFloors{
 						if Direction==driver.Down{
@@ -108,19 +108,15 @@ func Run(NewState chan<-utilities.State,
 			log.Println("Stop butten has been pressed:",stop)
 
 
-
 		case <-doorClose:
-
-
 			driver.Elev_set_door_open_lamp(false)
-
 			orderOnFloor, orderOnNextFloors := 
 				OrderOnTheFloor(Orders, &Direction, lastPassedFloor,orderComplete)
 			
 			if orderOnFloor !=-1 {
 				driver.Elev_set_motor_direction(driver.MotorStop)
 				driver.Elev_set_door_open_lamp(true)
-				doorClose = time.After(3*time.Second)
+				doorClose = time.After(DoorOpenTime)
 			} else {
 				if orderOnNextFloors{
 					if Direction == driver.Up{
