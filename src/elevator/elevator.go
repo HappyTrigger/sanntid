@@ -41,6 +41,10 @@ func Run(NewState chan<-utilities.State,
 	}
 
 
+	//Regarding the state-changes that must be sent to the manager. Those can either be implemented as
+	// channels, seperating every single event into different channels, and updating the state of 
+	// the elevator when reciveving new messages on those channels, or sending the complete state from the elevator modul
+
 
 	for{
 
@@ -68,6 +72,8 @@ func Run(NewState chan<-utilities.State,
 						}else{
 							driver.Elev_set_motor_direction(driver.MotorUp)
 						}
+
+						//Send new state here including current floor, direction, active
 						
 					}
 				}

@@ -41,7 +41,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	orderResend := time.Tick(OrderResendInterval)
 
 
-
 	if id == "" {
 		localIP, err := localip.LocalIP()
 		if err != nil {
@@ -96,10 +95,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 			//One should probably store the orders with the time that they were recived
 			// so that we can itirate over them and see if any orders have not been completed 
-			// after some time. This way we can 
+			// after some time. 
 
 			// Or we could have this check in each elevator which sends out an emergency signal if it should be active, 
-			// but isnt registering any state changes
+			// but isnt registering any state changes, some sort of currently active 
 
 
 
@@ -115,6 +114,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				stateMap[state.Ip]=state
 
 
+
+
 		case orderComplete:=<- recOrderCompleteFromPeers:
 			log.Println("Order at Floor:",orderComplete.Floor," Complete")
 			delete(orderMap,orderComplete.Checksum)
@@ -124,6 +125,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		case orderComplete:=<-elevatorOrderComplete:
 			delete(orderMap,orderComplete.Checksum)
 			sendOrderCompleteToPeers<-orderComplete
+
+			//Also send new state of machine here
 
 
 
@@ -136,6 +139,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			
 			currentPeers = p.Peers
 
+			// if peers are lost, iterate over the order map and send each order currently active on the lost elevator into
+			//orderdelegation-func with the updated peers-map. 
+
 			
 
 
@@ -146,13 +152,17 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 				case driver.Internal:	
 					log.Println("internal order")
+					SendOrderToElevator<-event
+
 
 					//Append the new internal order to the internal order map, then send the new state
+					// like this elevatorState.InternalOrders.Append(event.floor) or something like that i think
+					//If we know that the order is internal, the only thing we need is what floor the order is on. 
 
 				default: 
 					event.Checksum = event.Floor*10 + int(event.Button)
 					sendOrderToPeers<-event
-					unconfirmedOrderMap[newOrder.Checksum]=newOrder
+					unconfirmedOrderMap[event.Checksum]=event
 			}
 
 
