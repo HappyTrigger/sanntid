@@ -16,13 +16,11 @@ type State struct{
 	CurrentFloor int
 	Direction int
 	InternalOrders []driver.OrderEvent
-	
 	Door_open bool
 	BetweenFloors bool
+
 	ConnectionStatus bool
-
-
-
+	//To distinguis between the senders in special occasions
 	StateSentFromIp string
 	
 }
