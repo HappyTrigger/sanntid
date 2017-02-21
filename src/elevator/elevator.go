@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 	".././mydriver"
+	//".././dummydriver"
 )
 
 
@@ -28,9 +29,9 @@ func Run(NewState chan<-utilities.State,
 	var State State
 	var Direction driver.ButtonType
 
-	Direction := driver.Down
+	Direction = driver.Down
 	State = State_idle
-//	doorClose = time.After(DoorOpenTime)
+
 
 	lastPassedFloor := driver.Elev_get_floor_sensor_signal()
 	Orders := make(map[int]driver.OrderEvent)

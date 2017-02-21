@@ -8,6 +8,7 @@ import (
 	"./elevator"
 	//"log"
 	"./mydriver"
+	//"./dummydriver"
 	"os"
 	"os/signal"
 )
@@ -27,7 +28,7 @@ func main() {
 	//manager
 	DriverEvent := make(chan driver.OrderEvent)
 	SendOrderToElevator := make(chan driver.OrderEvent)
-	orderComplete :=make(chan utilities.NewOrder)
+	elevatorOrderComplete :=make(chan driver.OrderEvent)
 
 
 	//Elevator
@@ -47,7 +48,7 @@ func main() {
 		DoorOpen,
 		DoorClosed,
 		ElevatorEmergency,
-		orderComplete)
+		elevatorOrderComplete)
 	
 
 
@@ -62,7 +63,7 @@ func main() {
 		DoorOpen,
 		DoorClosed,
 		ElevatorEmergency,
-		orderComplete)
+		elevatorOrderComplete)
 
 
 	select {

@@ -1,5 +1,10 @@
 package utilities
 
+import(
+	".././mydriver"
+	//".././dummydriver"
+	)
+
 
 type Achnowledgement struct {
 	Checksum int
@@ -7,13 +12,18 @@ type Achnowledgement struct {
 }
 
 type State struct{
+	Ip string
 	CurrentFloor int
 	Direction int
-	InternalOrders []int
+	InternalOrders []driver.OrderEvent
+	
 	Door_open bool
-	Active bool
-	Ip string
+	BetweenFloors bool
+	ConnectionStatus bool
 
+
+
+	StateSentFromIp string
 	
 }
 
