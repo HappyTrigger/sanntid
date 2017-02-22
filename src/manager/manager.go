@@ -100,11 +100,11 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			// Or we could have this check in each elevator which sends out an emergency signal if it should be active, 
 			// but isnt registering any state changes, some sort of currently active 
 
-			var takeorder bool
+			//var takeorder bool
 			//Do some calculations on elevator states here, send order to elevator if this elevator is best suited.
-			if takeorder,orderAssignedToMap = orderDelegated(stateMap,msg,currentPeers,orderAssignedToMap); takeorder{
-				SendOrderToElevator<-msg
-			}
+			//if takeorder,orderAssignedToMap = orderDelegated(stateMap,msg,currentPeers,orderAssignedToMap); takeorder{
+			SendOrderToElevator<-msg
+			//}
 			
 
 		case state:= <-recvStateFromPeers:
@@ -138,7 +138,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				stateMap[p.New]=state
 			}
 
-			var takeorder bool
+		/*	var takeorder bool
 			//rewrite this, looks ugly as fuck
 			for _,lostIp:= range p.Lost {
 					for checksum,ip:= range orderAssignedToMap{
@@ -151,7 +151,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 						}
 					}
 				}
-
+*/
 
 		case state:= <-ElevatorStateFromElevator:
 			state.Ip,state.StateSentFromIp = localIP,localIP
@@ -161,13 +161,13 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 		case orderComplete:=<- recOrderCompleteFromPeers:
 			log.Println("Order at Floor:",orderComplete.Floor," completed by :", orderAssignedToMap[orderComplete.Checksum])
-			delete(orderAssignedToMap,orderComplete.Checksum)
+			//delete(orderAssignedToMap,orderComplete.Checksum)
 			delete(orderMap,orderComplete.Checksum)
 
 
 		case orderComplete:=<-ElevatorOrderComplete:
 			sendOrderCompleteToPeers<-orderComplete
-			delete(orderAssignedToMap,orderComplete.Checksum)
+			//delete(orderAssignedToMap,orderComplete.Checksum)
 			delete(orderMap,orderComplete.Checksum)
 
 
