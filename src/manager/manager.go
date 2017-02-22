@@ -4,8 +4,8 @@ import (
 	".././utilities"
 	"log"
 	"time"
-	".././dummydriver"
-	//".././mydriver"
+	//".././dummydriver"
+	".././mydriver"
 	".././network/bcast"
 	".././network/localip"
 	".././network/peers"
@@ -17,6 +17,7 @@ import (
 
 const(
 	OrderResendInterval = 500*time.Millisecond
+	AllowedTimeBeforeEmergency = 5*time.Second
 )
 	var localIP string
 
@@ -31,6 +32,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 	var id string
+	var currentPeers []string
+	//var currentElevatorFloor int
+	//var elevatorFailiureTimer <-chan time.Time
+
 
 	if id == "" {
 		localIP, err := localip.LocalIP()
@@ -42,24 +47,12 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	}
 	//Probably dont need the ID
 
-
-	var elevatorState utilities.State
-	var currentPeers []string
-
 	orderMap := make(map[int]driver.OrderEvent)
 	orderAssignedToMap := make(map[int]string) // combine the checksum and IP of the given elevator
 	unconfirmedOrderMap := make(map[int]driver.OrderEvent)
 	stateMap := make(map[string]utilities.State)
-	
-
-
 	orderResend := time.Tick(OrderResendInterval)
 
-
-
-
-	elevatorState.Ip = localIP
-	stateMap[elevatorState.Ip]=elevatorState
 
 
 	peerUpdateCh := make(chan peers.PeerUpdate)
@@ -114,18 +107,20 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			}
 			
 
-
 		case state:= <-recvStateFromPeers:
-				if state.Ip == localIP && state.StateSentFromIp != localIP{ // fix so that when you recive a state update from yourself, you dont iterate over the list
-					log.Println("Recieved state from antoher elevator")
-
+				if state.Ip == localIP && state.StateSentFromIp != localIP{ 
+					log.Println("Recieved state from another elevator")
 					for _,order := range state.InternalOrders{
 						SendOrderToElevator<-order
-						elevatorState.InternalOrders[order.Floor]=order
 
 					} 
 				}
 				stateMap[state.Ip]=state
+
+				//Will probably implement the constant elevator-checker here, to see if anyone doesnt update their state, including
+				//our own. If it does not, while we know it should be moving, then something is clearly wrong.
+				//And the elevator should be terminated from the system
+				
 
 		case p := <-peerUpdateCh:
 			log.Printf("Peer update:\n")
@@ -135,7 +130,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			
 			currentPeers = p.Peers
 
-
 			if state, ok := stateMap[p.New]; ok { 
 						state.StateSentFromIp = localIP
     					sendStateToPeers<-state
@@ -144,8 +138,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				stateMap[p.New]=state
 			}
 
-			
-			
 			var takeorder bool
 			//rewrite this, looks ugly as fuck
 			for _,lostIp:= range p.Lost {
@@ -162,75 +154,28 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case state:= <-ElevatorStateFromElevator:
-			state.Ip = localIP
+			state.Ip,state.StateSentFromIp = localIP,localIP
 			stateMap[localIP]=state
 			sendStateToPeers<-state
 
 
 		case orderComplete:=<- recOrderCompleteFromPeers:
-			log.Println("Order at Floor:",orderComplete.Floor," Complete")
-
+			log.Println("Order at Floor:",orderComplete.Floor," completed by :", orderAssignedToMap[orderComplete.Checksum])
 			delete(orderAssignedToMap,orderComplete.Checksum)
 			delete(orderMap,orderComplete.Checksum)
 
 
-			
 		case orderComplete:=<-ElevatorOrderComplete:
-			switch orderComplete.Button{
+			sendOrderCompleteToPeers<-orderComplete
+			delete(orderAssignedToMap,orderComplete.Checksum)
+			delete(orderMap,orderComplete.Checksum)
 
-				case driver.Internal:
-					var internalOrders [] driver.OrderEvent
-					delete(orderMap,orderComplete.Checksum)
-					// Loop threw ordermap and put every internal-order into the elevator.internalorder slice then send the state update
-					
-					for _, order := range orderMap{
-						if order.Button == driver.Internal{
-							internalOrders = append(internalOrders,order)
-						}
-
-					}
-					elevatorState.InternalOrders = internalOrders
-					sendStateToPeers<-elevatorState
-					stateMap[localIP]=elevatorState
-
-
-
-				default:
-					sendOrderCompleteToPeers<-orderComplete
-					delete(orderAssignedToMap,orderComplete.Checksum)
-					delete(orderMap,orderComplete.Checksum)
-
-				}
-
-
-
-
-	
 
 		case event:=<-DriverEvent:
 			event.Checksum = event.Floor*10 + int(event.Button)
-			
 			switch event.Button{
-
 				case driver.Internal:
-					var internalOrders [] driver.OrderEvent
-					log.Println("internal order")
-					orderMap[event.Checksum]=event
-					// Loop threw ordermap and put every internal-order into the elevator.internalorder slice then send the state update
-					//sendStateToPeers<-elevatorState
-
-					for _, order := range orderMap{
-						if order.Button == driver.Internal{
-							internalOrders = append(internalOrders,order)
-						}
-
-					}
-					elevatorState.InternalOrders = internalOrders
-					sendStateToPeers<-elevatorState
 					SendOrderToElevator<-event
-
-
-
 
 				default: 
 					sendOrderToPeers<-event
@@ -243,9 +188,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			// some check for both IPs must be implemented here before the order is deleted
 
 
-
-
-
 		case <-orderResend:
 			for _,v:=range unconfirmedOrderMap{
 				sendOrderToPeers<-v
@@ -254,15 +196,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
 
 
 

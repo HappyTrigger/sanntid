@@ -4,8 +4,8 @@ import (
 	".././utilities"
 	"log"
 	"time"
-	//".././mydriver"
-	".././dummydriver"
+	".././mydriver"
+	//".././dummydriver"
 )
 
 
@@ -124,7 +124,7 @@ func Run(
 			temp:=ElevatorState
 			ElevatorStateToManager<-temp
 
-			
+
 		}
 	}
 }
@@ -262,7 +262,7 @@ func elevatorControl(DoorState bool,
 			BetweenFloors=false
 		}
 	}
-	StateChange<-true
+	StateChange<-true // Dont know if this will work or not, if it does not, then it must be written to be a go-routine instead
 }
 
 

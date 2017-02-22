@@ -6,8 +6,8 @@ import (
 	"./manager"
 	"./elevator"
 	//"log"
-	//"./mydriver"
-	"./dummydriver"
+	"./mydriver"
+	//"./dummydriver"
 	"os"
 	"os/signal"
 )
@@ -34,9 +34,7 @@ func main() {
 
 
 	//statetransfer
-
 	ElevatorState := make(chan utilities.State)
-
 	StopButton := make(chan bool)
 
 
