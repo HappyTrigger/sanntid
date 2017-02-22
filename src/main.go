@@ -6,8 +6,8 @@ import (
 	"./manager"
 	"./elevator"
 	//"log"
-	"./mydriver"
-	//"./dummydriver"
+	//"./mydriver"
+	"./dummydriver"
 	"os"
 	"os/signal"
 )

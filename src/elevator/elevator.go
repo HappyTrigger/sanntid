@@ -4,8 +4,8 @@ import (
 	".././utilities"
 	"log"
 	"time"
-	".././mydriver"
-	//".././dummydriver"
+	//".././mydriver"
+	".././dummydriver"
 )
 
 
@@ -65,29 +65,17 @@ func Run(
 			switch State {
 
 				case State_idle:
-				orderOnFloor,orderOnNextFloors:=OrderOnTheFloor(Orders,
-				*Direction,*lastPassedFloor,OrderComplete)
-				if orderOnFloor !=-1 {
-					driver.Elev_set_motor_direction(driver.MotorStop)
-					driver.Elev_set_door_open_lamp(true)
-					doorClose = time.After(DoorOpenTime)
-					*DoorState=true
-					*BetweenFloors=false
-				}else{
-					if orderOnNextFloors{
-						if *Direction==driver.Down{
-							driver.Elev_set_motor_direction(driver.MotorDown)
-						}else{
-							driver.Elev_set_motor_direction(driver.MotorUp)
-						}
-						*BetweenFloors=true
-
-
-						//Send new state here including current floor, direction, active
-						
-					}
-				}
-				StateChange<-true
+				
+				elevatorControl(
+					*DoorState ,
+					*BetweenFloors ,
+					*Direction,
+					StateChange ,
+					doorClose,
+					Orders,
+					*lastPassedFloor,
+					OrderComplete,
+					State)
 
 
 				case State_moving:
@@ -100,30 +88,32 @@ func Run(
 		case *lastPassedFloor = <-SensorEvent:
 			driver.Elev_set_floor_indicator(*lastPassedFloor)
 			if *lastPassedFloor !=-1 {
-
-				orderOnFloor,orderOnNextFloors:=OrderOnTheFloor(Orders,
-				*Direction,*lastPassedFloor,OrderComplete)
-			
-				if orderOnFloor !=-1 {
-					driver.Elev_set_motor_direction(driver.MotorStop)
-					driver.Elev_set_door_open_lamp(true)
-					doorClose = time.After(3*time.Second)
-					*DoorState=true
-					*BetweenFloors=false
-				}else{
-					if orderOnNextFloors{
-						if *Direction==driver.Down{
-							driver.Elev_set_motor_direction(driver.MotorDown)
-						}else{
-							driver.Elev_set_motor_direction(driver.MotorUp)
-						}
-						
-					}
-					*BetweenFloors=true
+				elevatorControl(
+					*DoorState,
+					*BetweenFloors,
+					*Direction,
+					StateChange,
+					doorClose,
+					Orders,
+					*lastPassedFloor,
+					OrderComplete,
+					State)	
 				}
-			}
-			StateChange<-true
+				
 
+		case <-doorClose:
+			driver.Elev_set_door_open_lamp(false)
+			*DoorState=false
+			elevatorControl(
+					*DoorState,
+					*BetweenFloors,
+					*Direction,
+					StateChange ,
+					doorClose,
+					Orders,
+					*lastPassedFloor,
+					OrderComplete,
+					State)
 
 
 
@@ -134,35 +124,8 @@ func Run(
 			temp:=ElevatorState
 			ElevatorStateToManager<-temp
 
-
-
-		case <-doorClose:
-			driver.Elev_set_door_open_lamp(false)
-			*DoorState=false
-			orderOnFloor, orderOnNextFloors := 
-				OrderOnTheFloor(Orders, *Direction,*lastPassedFloor,OrderComplete)
 			
-			if orderOnFloor !=-1 {
-				driver.Elev_set_motor_direction(driver.MotorStop)
-				driver.Elev_set_door_open_lamp(true)
-				doorClose = time.After(DoorOpenTime)
-				*DoorState=true
-				*BetweenFloors=false
-			} else {
-				if orderOnNextFloors{
-					if *Direction == driver.Up{
-						driver.Elev_set_motor_direction(driver.MotorUp)
-					}else{
-						driver.Elev_set_motor_direction(driver.MotorDown)
-					}
-					State=State_moving
-					*BetweenFloors=true
-				}else{
-					State=State_idle
-				}
-			}
 		}
-		StateChange<-true
 	}
 }
 
