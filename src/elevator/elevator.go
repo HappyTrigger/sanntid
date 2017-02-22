@@ -128,14 +128,13 @@ func Run(
 		}
 	}
 }
-
+//This function can probably be rewritten to half its length, if you just irierate over one segment twice.
 func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 	Direction* driver.ButtonType,
 	LastPassedFloor* int,
 	OrderComplete chan<-driver.OrderEvent)(int,bool){
 
 
-	//log.Println("Order Checking func started")
 	No_order := -1
 	var orderOnNextFloors bool
 	var orderOnFloor int 
@@ -144,7 +143,6 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 	orderOnFloor = -1
 
 	for k,v:= range orders{
-		//log.Println("Checking")
 		if v.Button == *Direction || v.Button == driver.Internal{
 			if *LastPassedFloor == v.Floor{
 				orderOnFloor=k //Send orderNumber back
