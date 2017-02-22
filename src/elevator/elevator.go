@@ -67,15 +67,15 @@ func Run(
 				case State_idle:
 				
 				elevatorControl(
-					*DoorState ,
-					*BetweenFloors ,
-					*Direction,
+					DoorState ,
+					BetweenFloors ,
+					Direction,
 					StateChange ,
 					doorClose,
 					Orders,
-					*lastPassedFloor,
+					lastPassedFloor,
 					OrderComplete,
-					State)
+					&State)
 
 
 				case State_moving:
@@ -89,15 +89,15 @@ func Run(
 			driver.Elev_set_floor_indicator(*lastPassedFloor)
 			if *lastPassedFloor !=-1 {
 				elevatorControl(
-					*DoorState,
-					*BetweenFloors,
-					*Direction,
+					DoorState,
+					BetweenFloors,
+					Direction,
 					StateChange,
 					doorClose,
 					Orders,
-					*lastPassedFloor,
+					lastPassedFloor,
 					OrderComplete,
-					State)	
+					&State)	
 				}
 				
 
@@ -105,15 +105,15 @@ func Run(
 			driver.Elev_set_door_open_lamp(false)
 			*DoorState=false
 			elevatorControl(
-					*DoorState,
-					*BetweenFloors,
-					*Direction,
+					DoorState,
+					BetweenFloors,
+					Direction,
 					StateChange ,
 					doorClose,
 					Orders,
-					*lastPassedFloor,
+					lastPassedFloor,
 					OrderComplete,
-					State)
+					&State)
 
 
 
@@ -130,8 +130,8 @@ func Run(
 }
 
 func OrderOnTheFloor(orders map[int]driver.OrderEvent,
-	Direction driver.ButtonType,
-	CurrentFloor int,
+	Direction* driver.ButtonType,
+	LastPassedFloor* int,
 	OrderComplete chan<-driver.OrderEvent)(int,bool){
 
 
@@ -145,8 +145,8 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 
 	for k,v:= range orders{
 		//log.Println("Checking")
-		if v.Button == Direction || v.Button == driver.Internal{
-			if CurrentFloor == v.Floor{
+		if v.Button == *Direction || v.Button == driver.Internal{
+			if *LastPassedFloor == v.Floor{
 				orderOnFloor=k //Send orderNumber back
 				driver.Elev_set_button_lamp(v.Button,v.Floor,false)
 				log.Println("Order on floor confirmed")
@@ -154,27 +154,27 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 				delete(orders,k)
 			}
 			
-			if Direction == driver.Up{
-				if v.Floor>CurrentFloor{
+			if *Direction == driver.Up{
+				if v.Floor>*LastPassedFloor{
 					orderOnNextFloors=true
 					log.Println("Order on the floor above")
 				}
 			}else{
-				if v.Floor<CurrentFloor{
+				if v.Floor<*LastPassedFloor{
 					orderOnNextFloors=true
 					log.Println("Order on the floor below")
 				}
 			}
 		}else{
 
-			switch Direction{
+			switch *Direction{
 				case driver.Up:
-					if v.Floor > CurrentFloor{
+					if v.Floor > *LastPassedFloor{
 							orderOnNextFloors=true
 					}
 
 				case driver.Down:
-					if v.Floor < CurrentFloor{
+					if v.Floor < *LastPassedFloor{
 						orderOnNextFloors=true
 							
 					}
@@ -183,41 +183,41 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 		}
 
 	if orderOnFloor == No_order && orderOnNextFloors==false{
-		if Direction == driver.Up{
-			Direction = driver.Down
+		if *Direction == driver.Up{
+			*Direction = driver.Down
 		}else{
-			Direction = driver.Up
+			*Direction = driver.Up
 		}
 		for k,v:= range orders{
-			if v.Button == Direction || v.Button == driver.Internal{
-				if CurrentFloor == v.Floor{
+			if v.Button == *Direction || v.Button == driver.Internal{
+				if *LastPassedFloor == v.Floor{
 					orderOnFloor=k //Send orderNumber back
 					driver.Elev_set_button_lamp(v.Button,v.Floor,false)
 					OrderComplete<-v
 					delete(orders,k)
 					log.Println("Order on floor confirmed")
 				}
-				if Direction == driver.Up{
-					if v.Floor>CurrentFloor{
+				if *Direction == driver.Up{
+					if v.Floor>*LastPassedFloor{
 						orderOnNextFloors=true
 						log.Println("Order on the floor above")
 					}
 				}else{
-					if v.Floor<CurrentFloor{
+					if v.Floor<*LastPassedFloor{
 						orderOnNextFloors=true
 						log.Println("Order on the floor below")
 					}
 				}
 			}else{
 
-			switch Direction{
+			switch *Direction{
 				case driver.Up:
-					if v.Floor > CurrentFloor{
+					if v.Floor > *LastPassedFloor{
 							orderOnNextFloors=true
 					}
 
 				case driver.Down:
-					if v.Floor < CurrentFloor{
+					if v.Floor < *LastPassedFloor{
 						orderOnNextFloors=true
 							
 					}
@@ -229,15 +229,15 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 }
 
 
-func elevatorControl(DoorState bool,
-	BetweenFloors bool,
-	Direction driver.ButtonType,
+func elevatorControl(DoorState* bool,
+	BetweenFloors* bool,
+	Direction* driver.ButtonType,
 	StateChange chan<-bool,
 	doorClose<-chan time.Time,
 	Orders map[int]driver.OrderEvent,
-	lastPassedFloor int,
+	lastPassedFloor* int,
 	OrderComplete chan<-driver.OrderEvent,
-	State State){
+	State* State){
 	
 	
 	orderOnFloor,orderOnNextFloors := OrderOnTheFloor(Orders,Direction,lastPassedFloor,OrderComplete)
@@ -246,20 +246,20 @@ func elevatorControl(DoorState bool,
 		driver.Elev_set_motor_direction(driver.MotorStop)
 		driver.Elev_set_door_open_lamp(true)
 		doorClose = time.After(DoorOpenTime)
-		DoorState=true
-		BetweenFloors=false
+		*DoorState=true
+		*BetweenFloors=false
 	} else {
 		if orderOnNextFloors{
-			if Direction == driver.Up{
+			if *Direction == driver.Up{
 				driver.Elev_set_motor_direction(driver.MotorUp)
 			}else{
 				driver.Elev_set_motor_direction(driver.MotorDown)
 			}
-				State=State_moving
-				BetweenFloors=true
+				*State=State_moving
+				*BetweenFloors=true
 		}else{
-			State=State_idle
-			BetweenFloors=false
+			*State=State_idle
+			*BetweenFloors=false
 		}
 	}
 	StateChange<-true // Dont know if this will work or not, if it does not, then it must be written to be a go-routine instead
