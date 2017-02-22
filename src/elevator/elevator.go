@@ -35,7 +35,7 @@ func Run(
 	BetweenFloors := &ElevatorState.BetweenFloors 
 
 	Orders := make(map[int]driver.OrderEvent)
-	StateChange := make(chan bool)
+	//StateChange := make(chan bool)
 
 
 
@@ -71,14 +71,13 @@ func Run(
 					DoorState ,
 					BetweenFloors ,
 					Direction,
-					StateChange ,
 					doorClose,
 					Orders,
 					lastPassedFloor,
 					OrderComplete,
 					&State)
 
-
+				ElevatorStateToManager<-ElevatorState
 				case State_moving:
 					//Do nothing
 				}
@@ -93,12 +92,12 @@ func Run(
 					DoorState,
 					BetweenFloors,
 					Direction,
-					StateChange,
 					doorClose,
 					Orders,
 					lastPassedFloor,
 					OrderComplete,
 					&State)	
+				ElevatorStateToManager<-ElevatorState
 				}
 				
 
@@ -109,22 +108,22 @@ func Run(
 					DoorState,
 					BetweenFloors,
 					Direction,
-					StateChange ,
 					doorClose,
 					Orders,
 					lastPassedFloor,
 					OrderComplete,
 					&State)
+			ElevatorStateToManager<-ElevatorState
 
 
 
 		case stop:=<-StopButton:
 			log.Println("Stop butten has been pressed:",stop)
-
+/*
 		case <-StateChange:
 			temp:=ElevatorState
 			ElevatorStateToManager<-temp
-
+*/
 
 		}
 	}
@@ -233,7 +232,6 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 func elevatorControl(DoorState* bool,
 	BetweenFloors* bool,
 	Direction* driver.ButtonType,
-	StateChange chan<-bool,
 	doorClose<-chan time.Time,
 	Orders map[int]driver.OrderEvent,
 	lastPassedFloor* int,
@@ -263,7 +261,7 @@ func elevatorControl(DoorState* bool,
 			*BetweenFloors=false
 		}
 	}
-	StateChange<-true // Dont know if this will work or not, if it does not, then it must be written to be a go-routine instead
+
 }
 
 

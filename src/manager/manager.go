@@ -32,7 +32,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 	var id string
-	var currentPeers []string
+	//var currentPeers []string
 	//var currentElevatorFloor int
 	//var elevatorFailiureTimer <-chan time.Time
 
@@ -45,7 +45,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		}
 		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
-	//Probably dont need the ID
+
 
 	orderMap := make(map[int]driver.OrderEvent)
 	orderAssignedToMap := make(map[int]string) // combine the checksum and IP of the given elevator
@@ -128,7 +128,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Printf("  New:      %q\n", p.New)
 			log.Printf("  Lost:     %q\n", p.Lost)
 			
-			currentPeers = p.Peers
+			//currentPeers = p.Peers
 
 			if state, ok := stateMap[p.New]; ok { 
 						state.StateSentFromIp = localIP
