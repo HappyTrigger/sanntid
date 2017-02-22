@@ -26,6 +26,7 @@ func Run(
 
 
 	var State State
+	State = State_idle
 	var doorClose <-chan time.Time
 
 	Direction := &ElevatorState.Direction
