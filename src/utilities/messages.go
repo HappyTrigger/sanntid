@@ -13,13 +13,12 @@ type Achnowledgement struct {
 
 type State struct{
 	Ip string
-	CurrentFloor int
-	Direction int
+	LastPassedFloor int
+	Direction driver.ButtonType
 	InternalOrders []driver.OrderEvent
-	Door_open bool
+	DoorState bool
 	BetweenFloors bool
-
-	ConnectionStatus bool
+	CurrentExternalOrders [] driver.OrderEvent //Need this in cost function
 	//To distinguis between the senders in special occasions
 	StateSentFromIp string
 	

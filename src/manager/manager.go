@@ -24,17 +24,27 @@ const(
 
 func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	DriverEvent <-chan driver.OrderEvent,
-	DoorOpen <- chan bool,
-	DoorClosed <-chan bool,
 	ElevatorEmergency <-chan bool,
-	elevatorOrderComplete<-chan driver.OrderEvent) {
+	ElevatorOrderComplete<-chan driver.OrderEvent,
+	ElevatorStateFromElevator <-chan utilities.State) {
 	
 
 
 	var id string
+
+	if id == "" {
+		localIP, err := localip.LocalIP()
+		if err != nil {
+			log.Println(err)
+			localIP = "DISCONNECTED"
+		}
+		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+	}
+	//Probably dont need the ID
+
+
 	var elevatorState utilities.State
 	var currentPeers []string
-
 
 	orderMap := make(map[int]driver.OrderEvent)
 	orderAssignedToMap := make(map[int]string) // combine the checksum and IP of the given elevator
@@ -47,14 +57,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 
-	if id == "" {
-		localIP, err := localip.LocalIP()
-		if err != nil {
-			log.Println(err)
-			localIP = "DISCONNECTED"
-		}
-		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-	}
 
 	elevatorState.Ip = localIP
 	stateMap[elevatorState.Ip]=elevatorState
@@ -87,9 +89,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 
-
-
-
 	for {
 
 		select {
@@ -108,9 +107,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			// Or we could have this check in each elevator which sends out an emergency signal if it should be active, 
 			// but isnt registering any state changes, some sort of currently active 
 
-
-
-			takeorder:=false
+			var takeorder bool
 			//Do some calculations on elevator states here, send order to elevator if this elevator is best suited.
 			if takeorder,orderAssignedToMap = orderDelegated(stateMap,msg,currentPeers,orderAssignedToMap); takeorder{
 				SendOrderToElevator<-msg
@@ -128,7 +125,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 					} 
 				}
-
 				stateMap[state.Ip]=state
 
 		case p := <-peerUpdateCh:
@@ -140,14 +136,18 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			currentPeers = p.Peers
 
 
-			if state, ok := stateMap[p.New]; ok {
-						stateMap[p.New]=state
+			if state, ok := stateMap[p.New]; ok { 
 						state.StateSentFromIp = localIP
     					sendStateToPeers<-state
-				}else{
-					stateMap[p.New]=state
-				}
-			takeorder := false //rewrite this, looks ugly as fuck
+    					stateMap[p.New]=state
+			}else{
+				stateMap[p.New]=state
+			}
+
+			
+			
+			var takeorder bool
+			//rewrite this, looks ugly as fuck
 			for _,lostIp:= range p.Lost {
 					for checksum,ip:= range orderAssignedToMap{
 						if ip==lostIp{
@@ -161,6 +161,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				}
 
 
+		case state:= <-ElevatorStateFromElevator:
+			state.Ip = localIP
+			stateMap[localIP]=state
+			sendStateToPeers<-state
 
 
 		case orderComplete:=<- recOrderCompleteFromPeers:
@@ -171,7 +175,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 			
-		case orderComplete:=<-elevatorOrderComplete:
+		case orderComplete:=<-ElevatorOrderComplete:
 			switch orderComplete.Button{
 
 				case driver.Internal:
@@ -187,6 +191,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 					}
 					elevatorState.InternalOrders = internalOrders
 					sendStateToPeers<-elevatorState
+					stateMap[localIP]=elevatorState
+
 
 
 				default:
@@ -196,10 +202,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 				}
 
-			
-			
 
 
+
+	
 
 		case event:=<-DriverEvent:
 			event.Checksum = event.Floor*10 + int(event.Button)
@@ -237,6 +243,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			// some check for both IPs must be implemented here before the order is deleted
 
 
+
+
+
 		case <-orderResend:
 			for _,v:=range unconfirmedOrderMap{
 				sendOrderToPeers<-v
@@ -245,6 +254,13 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		}
 	}
 }
+
+
+
+
+
+
+
 
 
 

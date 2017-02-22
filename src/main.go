@@ -22,47 +22,44 @@ func main() {
 
 
 
-	NewState := make(chan utilities.State)
-
 	//manager
 	DriverEvent := make(chan driver.OrderEvent)
 	SendOrderToElevator := make(chan driver.OrderEvent)
-	elevatorOrderComplete :=make(chan driver.OrderEvent)
+	ElevatorOrderComplete :=make(chan driver.OrderEvent)
 
 
 	//Elevator
-	ButtonStop := make(chan bool)
-	DoorOpen := make(chan bool)
-	DoorClosed := make(chan bool)
 	SensorEvent := make(chan int)
 	ElevatorEmergency := make(chan bool)
 
 
+	//statetransfer
 
+	ElevatorState := make(chan utilities.State)
+
+	StopButton := make(chan bool)
 
 
 	go manager.Run(
 		SendOrderToElevator,
 		DriverEvent,
-		DoorOpen,
-		DoorClosed,
 		ElevatorEmergency,
-		elevatorOrderComplete)
+		ElevatorOrderComplete,
+		ElevatorState)
 	
 
 
 
-	driver.Init(DriverEvent,SensorEvent,ButtonStop)
+	driver.Init(DriverEvent,SensorEvent,StopButton)
 	
 
-	go elevator.Run(NewState,
+	go elevator.Run(
 		SendOrderToElevator,
 		SensorEvent,
-		ButtonStop,
-		DoorOpen,
-		DoorClosed,
 		ElevatorEmergency,
-		elevatorOrderComplete)
+		ElevatorOrderComplete,
+		ElevatorState,
+		StopButton)
 
 
 	select {

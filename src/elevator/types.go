@@ -13,6 +13,13 @@ const(
 
 )
 
+type DoorState bool
+
+const(
+	DoorOpen DoorState = true
+	DoorClosed = false
+)
+
 /*
 const(
 	Dir_up = iota 
