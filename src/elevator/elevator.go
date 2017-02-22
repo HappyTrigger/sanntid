@@ -77,7 +77,7 @@ func Run(
 					OrderComplete,
 					&State)
 
-				ElevatorStateToManager<-ElevatorState
+				ElevatorStateToManager<-sendState()
 				case State_moving:
 					//Do nothing
 				}
@@ -97,7 +97,7 @@ func Run(
 					lastPassedFloor,
 					OrderComplete,
 					&State)	
-				ElevatorStateToManager<-ElevatorState
+				ElevatorStateToManager<-sendState()
 				}
 				
 
@@ -113,7 +113,7 @@ func Run(
 					lastPassedFloor,
 					OrderComplete,
 					&State)
-			ElevatorStateToManager<-ElevatorState
+			ElevatorStateToManager<-sendState()
 
 
 
@@ -269,6 +269,15 @@ func elevatorControl(DoorState* bool,
 
 
 
+func sendState() utilities.State{
+	temp_state = utilities.State
+	temp_state.LastPassedFloor = ElevatorState.LastPassedFloor
+	temp_state.Direction = ElevatorState.Direction
+	temp_state.DoorState = ElevatorState.DoorState
+	temp_state.BetweenFloors = ElevatorState.BetweenFloors
 
+	return temp_state
+
+}
 
 

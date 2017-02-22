@@ -130,6 +130,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			
 			//currentPeers = p.Peers
 
+			/*
 			if state, ok := stateMap[p.New]; ok { 
 						state.StateSentFromIp = localIP
     					sendStateToPeers<-state
@@ -137,6 +138,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			}else{
 				stateMap[p.New]=state
 			}
+			*/
 
 		/*	var takeorder bool
 			//rewrite this, looks ugly as fuck
