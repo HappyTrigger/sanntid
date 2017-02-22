@@ -71,7 +71,7 @@ func Run(
 					DoorState ,
 					BetweenFloors ,
 					Direction,
-					doorClose,
+					&doorClose,
 					Orders,
 					lastPassedFloor,
 					OrderComplete,
@@ -92,7 +92,7 @@ func Run(
 					DoorState,
 					BetweenFloors,
 					Direction,
-					doorClose,
+					&doorClose,
 					Orders,
 					lastPassedFloor,
 					OrderComplete,
@@ -108,7 +108,7 @@ func Run(
 					DoorState,
 					BetweenFloors,
 					Direction,
-					doorClose,
+					&doorClose,
 					Orders,
 					lastPassedFloor,
 					OrderComplete,
@@ -232,7 +232,7 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 func elevatorControl(DoorState* bool,
 	BetweenFloors* bool,
 	Direction* driver.ButtonType,
-	doorClose<-chan time.Time,
+	doorClose * <-chan time.Time,
 	Orders map[int]driver.OrderEvent,
 	lastPassedFloor* int,
 	OrderComplete chan<-driver.OrderEvent,
@@ -244,7 +244,7 @@ func elevatorControl(DoorState* bool,
 	if orderOnFloor !=-1 {
 		driver.Elev_set_motor_direction(driver.MotorStop)
 		driver.Elev_set_door_open_lamp(true)
-		doorClose = time.After(DoorOpenTime)
+		*doorClose = time.After(DoorOpenTime)
 		*DoorState=true
 		*BetweenFloors=false
 	} else {
@@ -261,7 +261,6 @@ func elevatorControl(DoorState* bool,
 			*BetweenFloors=false
 		}
 	}
-
 }
 
 
@@ -270,7 +269,7 @@ func elevatorControl(DoorState* bool,
 
 
 func sendState() utilities.State{
-	temp_state = utilities.State
+	temp_state := utilities.State{}
 	temp_state.LastPassedFloor = ElevatorState.LastPassedFloor
 	temp_state.Direction = ElevatorState.Direction
 	temp_state.DoorState = ElevatorState.DoorState
