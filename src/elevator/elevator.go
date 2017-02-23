@@ -8,18 +8,20 @@ import (
 	//".././dummydriver"
 )
 
-
 const(
 	DoorOpenTime = 2*time.Second
+	No_order = -1
 ) 
 
-var ElevatorState utilities.State //:= utilities.State{}
+
+var ElevatorState utilities.State
+
 
 
 func Run(
 	NewOrder <-chan driver.OrderEvent,
 	SensorEvent <-chan int,
-	ElevatorEmergency <-chan bool,
+	ElevatorEmergency chan<- bool,
 	OrderComplete chan<-driver.OrderEvent,
 	ElevatorStateToManager chan<- utilities.State,
 	StopButton<-chan bool) {
@@ -35,8 +37,6 @@ func Run(
 	BetweenFloors := &ElevatorState.BetweenFloors 
 
 	Orders := make(map[int]driver.OrderEvent)
-	//StateChange := make(chan bool)
-
 
 
 
@@ -60,7 +60,7 @@ func Run(
 		case order:=<-NewOrder:
 			Orders[order.Checksum] = order
 			driver.Elev_set_button_lamp(order.Button,order.Floor,true)
-			log.Println("New order in elevator")
+			log.Println("Order delegated to this elevator")
 
 
 			switch State {
@@ -117,17 +117,21 @@ func Run(
 
 
 
-		case stop:=<-StopButton:
-			log.Println("Stop butten has been pressed:",stop)
-/*
-		case <-StateChange:
-			temp:=ElevatorState
-			ElevatorStateToManager<-temp
-*/
+		case <-StopButton:
+			ElevatorEmergency<-true
+			
 
 		}
 	}
 }
+
+
+
+
+
+
+
+
 //This function can probably be rewritten to half its length, if you just irierate over one segment twice.
 func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 	Direction* driver.ButtonType,
@@ -135,7 +139,7 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 	OrderComplete chan<-driver.OrderEvent)(int,bool){
 
 
-	No_order := -1
+	
 	var orderOnNextFloors bool
 	var orderOnFloor int 
 

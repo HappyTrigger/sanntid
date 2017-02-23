@@ -32,9 +32,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 	var id string
-	//var currentPeers []string
+	var currentPeers []string
 	//var currentElevatorFloor int
-	//var elevatorFailiureTimer <-chan time.Time
+
 
 
 	if id == "" {
@@ -93,18 +93,17 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum }
 			log.Println("Recived order from network")
 
-			//One should probably store the orders with the time that they were recived
-			// so that we can itirate over them and see if any orders have not been completed 
-			// after some time. 
+		
 
-			// Or we could have this check in each elevator which sends out an emergency signal if it should be active, 
-			// but isnt registering any state changes, some sort of currently active 
+			if ok := orderDelegated(stateMap,msg,currentPeers,orderAssignedToMap); ok{
+				SendOrderToElevator<-msg
+				for checksum,ip := range orderAssignedToMap{
+					if ip == localIP{
+						log.Println("Active order with checksum:",checksum)
+					}
+				}
+			}
 
-			//var takeorder bool
-			//Do some calculations on elevator states here, send order to elevator if this elevator is best suited.
-			//if takeorder,orderAssignedToMap = orderDelegated(stateMap,msg,currentPeers,orderAssignedToMap); takeorder{
-			SendOrderToElevator<-msg
-			//}
 			
 
 		case state:= <-recvStateFromPeers:
@@ -128,7 +127,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Printf("  New:      %q\n", p.New)
 			log.Printf("  Lost:     %q\n", p.Lost)
 			
-			//currentPeers = p.Peers
+			currentPeers = p.Peers
 
 			/*
 			if state, ok := stateMap[p.New]; ok { 
@@ -189,6 +188,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			delete(unconfirmedOrderMap,ack.Checksum)
 			// some check for both IPs must be implemented here before the order is deleted
 
+		case <-ElevatorEmergency:
+			log.Println("Stop-Button has been pressed, all elevators should be notified and all orders for elevator :")
+			fmt.Sprintf("peer-%s-%d", localIP, id)
+
 
 		case <-orderResend:
 			for _,v:=range unconfirmedOrderMap{
@@ -204,7 +207,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 //This function should totally be rewritten
 func orderDelegated(stateMap map[string]utilities.State,
-	orderEvent driver.OrderEvent,currentPeers[]string,orderAssignedToMap map[int]string) (bool,map[int]string) {
+	orderEvent driver.OrderEvent,currentPeers[]string,orderAssignedToMap map[int]string) bool {
 
 
 	var fitness int
@@ -244,8 +247,9 @@ func orderDelegated(stateMap map[string]utilities.State,
 	orderAssignedToMap[orderEvent.Checksum]=OrderGivenToIp
 
 	if OrderGivenToIp == localIP{
-		return true, orderAssignedToMap
+		return true
+	}else{
+		return false
 	}
-	return false, orderAssignedToMap
 }
 

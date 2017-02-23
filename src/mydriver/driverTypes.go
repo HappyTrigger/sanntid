@@ -9,15 +9,6 @@ const(
 	Internal
 )
 
-
-type OrderEvent struct{
-	Floor int
-	Button ButtonType 
-	Checksum int
-}
-
-
-
 type MotorDirection int
 
 const (
@@ -25,5 +16,11 @@ const (
 	MotorStop
 	MotorDown
 )
+
+type OrderEvent struct{
+	Floor int
+	Button ButtonType 
+	Checksum int
+}
 
 
