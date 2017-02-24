@@ -80,6 +80,11 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	go bcast.Transmitter(30205, sendAckToPeers)
 	go bcast.Receiver(30205, recvAckFromPeers)
 
+	
+
+	
+
+		
 
 
 	for {
@@ -162,18 +167,19 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 		case orderComplete:=<- recOrderCompleteFromPeers:
 			log.Println("Order at Floor:",orderComplete.Floor," completed by :", orderAssignedToMap[orderComplete.Checksum])
-			//delete(orderAssignedToMap,orderComplete.Checksum)
+			delete(orderAssignedToMap,orderComplete.Checksum)
 			delete(orderMap,orderComplete.Checksum)
 
 
 		case orderComplete:=<-ElevatorOrderComplete:
 			sendOrderCompleteToPeers<-orderComplete
-			//delete(orderAssignedToMap,orderComplete.Checksum)
+			delete(orderAssignedToMap,orderComplete.Checksum)
 			delete(orderMap,orderComplete.Checksum)
 
 
 		case event:=<-DriverEvent:
 			event.Checksum = event.Floor*10 + int(event.Button)
+			log.Println("Sending new order")
 			switch event.Button{
 				case driver.Internal:
 					SendOrderToElevator<-event
@@ -185,6 +191,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case ack:=<-recvAckFromPeers:
+			log.Println("Recieced achnowledge")
 			delete(unconfirmedOrderMap,ack.Checksum)
 			// some check for both IPs must be implemented here before the order is deleted
 
@@ -194,6 +201,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case <-orderResend:
+			
 			for _,v:=range unconfirmedOrderMap{
 				sendOrderToPeers<-v
 			}

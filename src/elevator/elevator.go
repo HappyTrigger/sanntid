@@ -27,15 +27,16 @@ func Run(
 	StopButton<-chan bool) {
 
 
-	var State State
-	State = State_idle
-	var doorClose <-chan time.Time
-
 	Direction := &ElevatorState.Direction
 	lastPassedFloor := &ElevatorState.LastPassedFloor 
 	DoorState := &ElevatorState.DoorState 
 	BetweenFloors := &ElevatorState.BetweenFloors 
 
+	*DoorState		= false
+	*BetweenFloors 	= false
+
+
+	var doorClose <-chan time.Time
 	Orders := make(map[int]driver.OrderEvent)
 
 
@@ -45,16 +46,7 @@ func Run(
 		log.Fatal("[FATAL]\tElevator initialized between floors")
 	}
 
-
-
-
-	//Regarding the state-changes that must be sent to the manager. Those can either be implemented as
-	// channels, seperating every single event into different channels, and updating the state of 
-	// the elevator when reciveving new messages on those channels, or sending the complete state from the elevator modul
-
-
 	for{
-
 		select{
 
 		case order:=<-NewOrder:
@@ -62,10 +54,7 @@ func Run(
 			driver.Elev_set_button_lamp(order.Button,order.Floor,true)
 			log.Println("Order delegated to this elevator")
 
-
-			switch State {
-
-				case State_idle:
+			if !ElevatorState.BetweenFloors {
 				
 				elevatorControl(
 					DoorState ,
@@ -74,12 +63,10 @@ func Run(
 					&doorClose,
 					Orders,
 					lastPassedFloor,
-					OrderComplete,
-					&State)
+					OrderComplete)
 
 				ElevatorStateToManager<-sendState()
-				case State_moving:
-					//Do nothing
+				
 				}
 
 			
@@ -95,8 +82,8 @@ func Run(
 					&doorClose,
 					Orders,
 					lastPassedFloor,
-					OrderComplete,
-					&State)	
+					OrderComplete)	
+
 				ElevatorStateToManager<-sendState()
 				}
 				
@@ -111,8 +98,8 @@ func Run(
 					&doorClose,
 					Orders,
 					lastPassedFloor,
-					OrderComplete,
-					&State)
+					OrderComplete)
+
 			ElevatorStateToManager<-sendState()
 
 
@@ -237,8 +224,7 @@ func elevatorControl(DoorState* bool,
 	doorClose * <-chan time.Time,
 	Orders map[int]driver.OrderEvent,
 	lastPassedFloor* int,
-	OrderComplete chan<-driver.OrderEvent,
-	State* State){
+	OrderComplete chan<-driver.OrderEvent){
 	
 	
 	orderOnFloor,orderOnNextFloors := OrderOnTheFloor(Orders,Direction,lastPassedFloor,OrderComplete)
@@ -256,10 +242,9 @@ func elevatorControl(DoorState* bool,
 			}else{
 				driver.Elev_set_motor_direction(driver.MotorDown)
 			}
-				*State=State_moving
-				*BetweenFloors=true
+			*BetweenFloors=true
+		
 		}else{
-			*State=State_idle
 			*BetweenFloors=false
 		}
 	}
@@ -272,11 +257,7 @@ func elevatorControl(DoorState* bool,
 
 func sendState() utilities.State{
 	temp_state := utilities.State{}
-	temp_state.LastPassedFloor = ElevatorState.LastPassedFloor
-	temp_state.Direction = ElevatorState.Direction
-	temp_state.DoorState = ElevatorState.DoorState
-	temp_state.BetweenFloors = ElevatorState.BetweenFloors
-
+	temp_state = ElevatorState
 	return temp_state
 
 }

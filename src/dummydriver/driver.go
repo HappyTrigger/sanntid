@@ -32,22 +32,11 @@ func pollFloorSensor(sensorEventChan chan<- int) {
 }
 
 func pollButtons(order chan<- OrderEvent) {
-
-	var isPressed [N_BUTTONS][N_FLOORS]bool
-
-	for {
-		for f := 0; f < N_FLOORS; f++ {
-			for button := 0; button < N_BUTTONS; button++ {
-				if isPressed[ButtonType(button)][f] != elev_get_button_signal(ButtonType(button),f) {
-					isPressed[ButtonType(button)][f] = !isPressed[ButtonType(button)][f]
-					if isPressed[ButtonType(button)][f] {
-						order <- OrderEvent{f, ButtonType(button),0}
-					}
-				}
-			}
-		}
-		time.Sleep(PollInterval)
-	}
+	for{
+		
+		time.Sleep(3*time.Second)
+		order <- OrderEvent{2, ButtonType(Up),0}
+	}	
 }
 
 func pollStopButton(stopButtonChan chan<- bool) {
