@@ -22,7 +22,6 @@ func pollFloorSensor(sensorEventChan chan<- int) {
 
 	for {
 		sensorSignal := Elev_get_floor_sensor_signal()
-        //log.Println("POlling")
 		if state != sensorSignal {
 			state = sensorSignal
 			sensorEventChan <- state

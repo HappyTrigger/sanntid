@@ -27,10 +27,10 @@ func Run(
 	StopButton<-chan bool) {
 
 
-	Direction := &ElevatorState.Direction
+	Direction 		:= &ElevatorState.Direction
 	lastPassedFloor := &ElevatorState.LastPassedFloor 
-	DoorState := &ElevatorState.DoorState 
-	BetweenFloors := &ElevatorState.BetweenFloors 
+	DoorState 		:= &ElevatorState.DoorState 
+	BetweenFloors 	:= &ElevatorState.BetweenFloors 
 
 	*DoorState		= false
 	*BetweenFloors 	= false
@@ -54,7 +54,12 @@ func Run(
 			driver.Elev_set_button_lamp(order.Button,order.Floor,true)
 			log.Println("Order delegated to this elevator")
 
-			if !ElevatorState.BetweenFloors {
+			//Just a small check to see if the new order is the highest or lowest point the elevator must travel
+			// to change direction, this info is used in the orderdelegatio
+
+
+
+			if !*BetweenFloors {
 				
 				elevatorControl(
 					DoorState ,
@@ -221,7 +226,7 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 func elevatorControl(DoorState* bool,
 	BetweenFloors* bool,
 	Direction* driver.ButtonType,
-	doorClose * <-chan time.Time,
+	doorClose* <-chan time.Time,
 	Orders map[int]driver.OrderEvent,
 	lastPassedFloor* int,
 	OrderComplete chan<-driver.OrderEvent){
@@ -239,8 +244,10 @@ func elevatorControl(DoorState* bool,
 		if orderOnNextFloors{
 			if *Direction == driver.Up{
 				driver.Elev_set_motor_direction(driver.MotorUp)
+				log.Println("Driving up")
 			}else{
 				driver.Elev_set_motor_direction(driver.MotorDown)
+				log.Println("Driving Down")
 			}
 			*BetweenFloors=true
 		
