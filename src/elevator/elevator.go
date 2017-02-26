@@ -4,8 +4,8 @@ import (
 	".././utilities"
 	"log"
 	"time"
-	".././mydriver"
-	//".././dummydriver"
+	//".././mydriver"
+	".././dummydriver"
 )
 
 const(
@@ -54,10 +54,7 @@ func Run(
 			driver.Elev_set_button_lamp(order.Button,order.Floor,true)
 			log.Println("Order delegated to this elevator")
 
-			//Just a small check to see if the new order is the highest or lowest point the elevator must travel
-			// to change direction, this info is used in the orderdelegatio
-
-
+			
 
 			if !*BetweenFloors {
 				
@@ -71,10 +68,9 @@ func Run(
 					OrderComplete)
 
 				ElevatorStateToManager<-sendState()
-				
 				}
 
-			
+
 
 
 		case *lastPassedFloor = <-SensorEvent:

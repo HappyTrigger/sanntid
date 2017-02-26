@@ -4,13 +4,14 @@ import (
 	".././utilities"
 	"log"
 	"time"
-	//".././dummydriver"
-	".././mydriver"
+	".././dummydriver"
+	//".././mydriver"
 	".././network/bcast"
 	".././network/localip"
 	".././network/peers"
 	"os"
 	"fmt"
+	"math"
 
 )
 
@@ -43,6 +44,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		}
 		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
+	localIP = "127.0.0.1"
 
 
 	orderMap 				:= make(map[int]driver.OrderEvent)
@@ -80,6 +82,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	go bcast.Transmitter(30205, sendAckToPeers)
 	go bcast.Receiver(30205, recvAckFromPeers)
 
+	log.Println("Starting")
+	log.Println("Local Ip : ", localIP)
 
 	for {
 
@@ -94,7 +98,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 		
 
-			if ok := orderDelegated(stateMap,msg,currentPeers,orderAssignedToMap); ok{
+			if ok := OrderDelegator(stateMap,msg,currentPeers,orderAssignedToMap); ok{
 				SendOrderToElevator<-msg
 				for checksum,ip := range orderAssignedToMap{
 					if ip == localIP{
@@ -112,8 +116,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 						SendOrderToElevator<-internalOrder
 
 					} 
+				}else{
+					stateMap[state.Ip]=state
 				}
-				stateMap[state.Ip]=state
+				
 			
 
 				//Will probably implement the constant elevator-checker here, to see if anyone doesnt update their state, including
@@ -134,9 +140,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				log.Println("Reconnecting elevator, sending internal Orders")
 				state.StateSentFromIp = localIP
     			sendStateToPeers<-state
-    			stateMap[p.New]=state
-			}else{
-				stateMap[p.New]=state
 			}
 			
 
@@ -144,7 +147,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 					for checksum,ip:= range orderAssignedToMap{
 						if ip==lostIp{
 							msg := orderMap[checksum]
-							if ok := orderDelegated(stateMap,msg,currentPeers,orderAssignedToMap); ok{
+							if ok := OrderDelegator(stateMap,msg,currentPeers,orderAssignedToMap); ok{
 								SendOrderToElevator<-msg
 							}
 
@@ -184,12 +187,12 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 		case event:=<-DriverEvent:
 			event.Checksum = event.Floor*10 + int(event.Button)
-			log.Println("Sending new order")
 			switch event.Button{
 				case driver.Internal:
 					SendOrderToElevator<-event
 
 				default: 
+					log.Println("sending order")
 					sendOrderToPeers<-event
 					unconfirmedOrderMap[event.Checksum]=event
 			}
@@ -206,7 +209,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case <-orderResend:
-			
 			for _,v:=range unconfirmedOrderMap{
 				sendOrderToPeers<-v
 			}
@@ -218,73 +220,101 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 
-//This function should totally be rewritten
-func orderDelegated(stateMap map[string]utilities.State,
+
+
+
+
+
+func OrderDelegator(stateMap map[string]utilities.State,
 	orderEvent driver.OrderEvent,currentPeers[]string,orderAssignedToMap map[int]string) bool {
 
-
-	var fitness int
-	fitnessMap := make(map[string]int)
-	var i int
-
-	// The elevator with the lowest fitness takes the order
+	//The elevator with the lowest fitness takes the order
+	fitnessMap:= make(map[string]float64)
 
 	for elevator,state := range stateMap{
 		for _,peer:= range currentPeers{
 			if elevator == peer{
-				if state.BetweenFloors{
-					fitness += i
-
+				log.Println("Delegating orders to active elevators")
+				if !state.BetweenFloors{
+					fitnessMap[elevator]=math.Abs(float64(state.LastPassedFloor-orderEvent.Floor))
 				}else{
-					fitness = 1000 + i
-					i++
+					floorDifference:=float64(orderEvent.Floor-state.LastPassedFloor)
+					
+					switch orderEvent.Button{
+					case driver.Up:
+						if state.Direction == driver.Up{							
+							if floorDifference >=0 { //order Up above the elevator, and elavtor moving up
+								fitnessMap[elevator]=float64(floorDifference)
+							}else{
+								//order Up below, and elevator moving up
+								fitnessMap[elevator] = float64(math.Abs(float64(floorDifference)) + float64((4-state.LastPassedFloor)*2))
+							}
+						
+
+						}else{
+							//Order Up bellow, and eleavtor moving down 
+							if floorDifference <=0 {
+								fitnessMap[elevator]= float64(state.LastPassedFloor*2) - math.Abs(float64(floorDifference))
+							}else{
+								//Order Up above and eleavtor moving down
+								fitnessMap[elevator] = float64(math.Abs(float64(floorDifference)) + float64(state.LastPassedFloor*2))
+							}
+						}
+
+
+
+					case driver.Down: 
+						if state.Direction == driver.Down{
+							
+							if floorDifference <=0 { // Order downwards bellow, and elevator moving down
+								fitnessMap[elevator]=math.Abs(float64(floorDifference))
+							}else{
+								//Order downwards above, and elevator moving down
+								fitnessMap[elevator] = float64(math.Abs(float64(floorDifference)) + float64(state.LastPassedFloor*2))
+							}
+						}else{
+							//Order downwards above and elevator moving up
+							if floorDifference >=0 {
+								fitnessMap[elevator]=float64((4-state.LastPassedFloor)*2) - float64(floorDifference)
+							}else{
+								//Order downwards bellow and elevator moving up
+								fitnessMap[elevator] = float64(math.Abs(float64(floorDifference)) + float64((4-state.LastPassedFloor)*2))
+							}
+						}
+					}
 				}
-				fitnessMap[state.Ip]=fitness
 			}
 		}
-		fitness=0
 	}
-
-	//Create some sort of delegation-algorithm, which bases its decision on the current active peers, 
-	// the status of the peers(Are they moving or idle) and the postition and direction of the active elevators
-	var maxValue int
-	var OrderGivenToIp string
-	for ip,value := range fitnessMap{
-		if value > maxValue{
-			maxValue=value
-			OrderGivenToIp = ip
+	var minFitness float64
+	minFitness = 20
+	var ip string
+	for elevator, fitness := range fitnessMap{
+		if fitness < minFitness{
+			minFitness = fitness
+			ip = elevator
 		}
+
 	}
+	//Need some extra logic here to distinguis between elevators with the same fitness, so that
+	// we avoid several elevators taking the same order, perhaps look at the last 3 digits in the string
+	// one with the lowest take the order. 
 
 
-	orderAssignedToMap[orderEvent.Checksum]=OrderGivenToIp
-
-	if OrderGivenToIp == localIP{
+	log.Println("------FitnessMap------")
+	log.Println(fitnessMap)
+	orderAssignedToMap[orderEvent.Checksum]=ip
+	if ip == localIP{
 		return true
 	}else{
+		log.Println("Did not take order")
 		return false
 	}
 }
 
-func improvedOrderDelegated(stateMap map[string]utilities.State,
-	orderEvent driver.OrderEvent,currentPeers[]string,orderAssignedToMap map[int]string) bool {
 
 
-/*
 
-	// The elevator with the lowest fitness takes the order
 
-	for elevator,state := range stateMap{
-		for _,peer:= range currentPeers{
-			if elevator == peer{
 
-			}
-		}
-
-	}*/
-
-	//Create some sort of delegation-algorithm, which bases its decision on the current active peers, 
-	// the status of the peers(Are they moving or idle) and the postition and direction of the active elevators
-	return true
-}
 
