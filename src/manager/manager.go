@@ -221,7 +221,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 
-
+//Might have to change some of the values
 
 
 
@@ -290,10 +290,17 @@ func OrderDelegator(stateMap map[string]utilities.State,
 	minFitness = 20
 	var ip string
 	for elevator, fitness := range fitnessMap{
+		if fitness == minFitness{
+			if elevator > ip{
+				ip = elevator
+			} // Elevator with highest IP takes the order
+		}
+
 		if fitness < minFitness{
 			minFitness = fitness
 			ip = elevator
 		}
+
 
 	}
 	//Need some extra logic here to distinguis between elevators with the same fitness, so that

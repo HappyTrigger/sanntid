@@ -13,7 +13,6 @@ const(
 	No_order = -1
 ) 
 
-
 var ElevatorState utilities.State
 
 
