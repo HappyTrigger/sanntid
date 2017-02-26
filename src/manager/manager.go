@@ -4,8 +4,8 @@ import (
 	".././utilities"
 	"log"
 	"time"
-	".././dummydriver"
-	//".././mydriver"
+	//".././dummydriver"
+	".././driver"
 	".././network/bcast"
 	".././network/localip"
 	".././network/peers"
@@ -44,7 +44,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		}
 		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
-	localIP = "127.0.0.1"
+
 
 
 	orderMap 				:= make(map[int]driver.OrderEvent)
