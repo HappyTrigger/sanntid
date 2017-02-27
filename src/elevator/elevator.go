@@ -4,8 +4,8 @@ import (
 	".././utilities"
 	"log"
 	"time"
-	".././driver"
-	//".././dummydriver"
+	//".././driver"
+	".././dummydriver"
 )
 
 const(

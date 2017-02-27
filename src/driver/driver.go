@@ -23,7 +23,6 @@ func pollFloorSensor(sensorEventChan chan<- int) {
 
 	for {
 		sensorSignal := Elev_get_floor_sensor_signal()
-        //log.Println("POlling")
 		if state != sensorSignal {
 			state = sensorSignal
 			sensorEventChan <- state
@@ -101,7 +100,7 @@ func init(){
         default:
         }
     }
-    
+
     Elev_set_motor_direction(MotorStop)
     Elev_set_floor_indicator(Elev_get_floor_sensor_signal())
 }
@@ -227,7 +226,6 @@ func Elev_get_floor_sensor_signal() int {
     switch{
         case io.ReadBit(SENSOR_FLOOR1)!=0:
             return 0 
-            
         case io.ReadBit(SENSOR_FLOOR2)!=0: 
             return 1
         case io.ReadBit(SENSOR_FLOOR3)!=0: 

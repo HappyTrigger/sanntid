@@ -4,8 +4,8 @@ import (
 	".././utilities"
 	"log"
 	"time"
-	//".././dummydriver"
-	".././driver"
+	".././dummydriver"
+	//".././driver"
 	".././network/bcast"
 	".././network/localip"
 	".././network/peers"
@@ -222,6 +222,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 //Might have to change some of the values
+//This functions as it should. Can see if we want to rewrite it
+// into several small functions instead, splitting up the cost-functions
+// and combining them in a larger function, just to clean up the code.
 
 
 
@@ -234,7 +237,6 @@ func OrderDelegator(stateMap map[string]utilities.State,
 	for elevator,state := range stateMap{
 		for _,peer:= range currentPeers{
 			if elevator == peer{
-				log.Println("Delegating orders to active elevators")
 				if !state.BetweenFloors{
 					fitnessMap[elevator]=math.Abs(float64(state.LastPassedFloor-orderEvent.Floor))
 				}else{
@@ -295,17 +297,11 @@ func OrderDelegator(stateMap map[string]utilities.State,
 				ip = elevator
 			} // Elevator with highest IP takes the order
 		}
-
 		if fitness < minFitness{
 			minFitness = fitness
 			ip = elevator
 		}
-
-
 	}
-	//Need some extra logic here to distinguis between elevators with the same fitness, so that
-	// we avoid several elevators taking the same order, perhaps look at the last 3 digits in the string
-	// one with the lowest take the order. 
 
 
 	log.Println("------FitnessMap------")
