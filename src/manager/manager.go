@@ -100,11 +100,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 			if ok := OrderDelegator(stateMap,msg,currentPeers,orderAssignedToMap); ok{
 				SendOrderToElevator<-msg
-				for checksum,ip := range orderAssignedToMap{
-					if ip == localIP{
-						log.Println("Active order with checksum:",checksum)
-					}
-				}
 			}
 
 			
