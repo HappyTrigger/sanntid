@@ -4,8 +4,8 @@ import (
 	".././utilities"
 	"log"
 	"time"
-	//".././driver"
-	".././dummydriver"
+	".././driver"
+	//".././dummydriver"
 )
 
 const(
@@ -234,7 +234,6 @@ func elevatorControl(DoorState* bool,
 		driver.Elev_set_door_open_lamp(true)
 		*doorClose = time.After(DoorOpenTime)
 		*DoorState=true
-		*BetweenFloors=false
 	} else {
 		if orderOnNextFloors{
 			if *Direction == driver.Up{
