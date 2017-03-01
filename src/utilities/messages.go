@@ -24,5 +24,7 @@ type State struct{
 
 
 
+// Between floors can probably be rewritten to Elevator-Status or something like that
+//Where it is active when serving any kind or order, and Idle when not doing anything.
 
 

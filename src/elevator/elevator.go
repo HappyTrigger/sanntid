@@ -6,16 +6,16 @@ import (
 	"time"
 	".././driver"
 	//".././dummydriver"
+	"reflect"
 )
 
 const(
 	DoorOpenTime = 2*time.Second
 	No_order = -1
+	StatechangeInterval = 4*time.Second
 ) 
 
 var ElevatorState utilities.State
-
-
 
 func Run(
 	NewOrder <-chan driver.OrderEvent,
@@ -31,19 +31,23 @@ func Run(
 	DoorState 		:= &ElevatorState.DoorState 
 	BetweenFloors 	:= &ElevatorState.BetweenFloors 
 
-	*DoorState		= false
-	*BetweenFloors 	= false
-
-
 	var doorClose <-chan time.Time
+	var tempElevatorState utilities.State
+	StateChangeTimer := time.Tick(StatechangeInterval)
 	Orders := make(map[int]driver.OrderEvent)
 
-
-
+	*DoorState		= false
+	*BetweenFloors 	= false
+	*Direction 		= driver.Down
 	*lastPassedFloor = driver.Elev_get_floor_sensor_signal()
+	tempElevatorState = ElevatorState
+
 	if *lastPassedFloor == -1{
 		log.Fatal("[FATAL]\tElevator initialized between floors")
 	}
+
+
+
 
 	for{
 		select{
@@ -55,7 +59,7 @@ func Run(
 
 			
 
-			if !*BetweenFloors {
+			if !*BetweenFloors && !*DoorState {
 				
 				elevatorControl(
 					DoorState ,
@@ -73,6 +77,7 @@ func Run(
 
 
 		case *lastPassedFloor = <-SensorEvent:
+			log.Println("On Floor ", *lastPassedFloor)
 			driver.Elev_set_floor_indicator(*lastPassedFloor)
 			if *lastPassedFloor !=-1 {
 				elevatorControl(
@@ -106,6 +111,20 @@ func Run(
 
 		case <-StopButton:
 			ElevatorEmergency<-true
+
+		case <-StateChangeTimer:
+			if !*BetweenFloors && !*DoorState{
+				//system is idle
+			}else{
+				if reflect.DeepEqual(ElevatorState,tempElevatorState){
+					ElevatorEmergency<-true
+				}
+				tempElevatorState=ElevatorState
+			}
+
+
+
+
 			
 
 		}
@@ -119,13 +138,12 @@ func Run(
 
 
 
-//This function can probably be rewritten to half its length, if you just irierate over one segment twice.
+//This function can probably be rewritten to half its length, if you just irierate over one segment twice, but change
+//the direction for each iteration if no order in the current direction is found.
 func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 	Direction* driver.ButtonType,
 	LastPassedFloor* int,
 	OrderComplete chan<-driver.OrderEvent)(int,bool){
-
-
 	
 	var orderOnNextFloors bool
 	var orderOnFloor int 
@@ -133,6 +151,7 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 	orderOnNextFloors = false
 	orderOnFloor = -1
 
+	// k and v should we written to checksum and order
 	for k,v:= range orders{
 		if v.Button == *Direction || v.Button == driver.Internal{
 			if *LastPassedFloor == v.Floor{
@@ -142,7 +161,6 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 				OrderComplete<-v
 				delete(orders,k)
 			}
-			
 			if *Direction == driver.Up{
 				if v.Floor>*LastPassedFloor{
 					orderOnNextFloors=true
@@ -155,7 +173,7 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 				}
 			}
 		}else{
-
+			
 			switch *Direction{
 				case driver.Up:
 					if v.Floor > *LastPassedFloor{
@@ -229,11 +247,11 @@ func elevatorControl(DoorState* bool,
 	
 	orderOnFloor,orderOnNextFloors := OrderOnTheFloor(Orders,Direction,lastPassedFloor,OrderComplete)
 	
-	if orderOnFloor !=-1 {
+	if orderOnFloor !=No_order {
 		driver.Elev_set_motor_direction(driver.MotorStop)
 		driver.Elev_set_door_open_lamp(true)
 		*doorClose = time.After(DoorOpenTime)
-		*DoorState=true
+		*DoorState=true //Should probably create a type for this, so that you can write Doorstate = DoorOpen or something like that
 	} else {
 		if orderOnNextFloors{
 			if *Direction == driver.Up{
@@ -246,7 +264,9 @@ func elevatorControl(DoorState* bool,
 			*BetweenFloors=true
 		
 		}else{
+			//Between floors in only set to false when it is idle. This has to do with the delegation-alogrithm. 
 			*BetweenFloors=false
+
 		}
 	}
 }

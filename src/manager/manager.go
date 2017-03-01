@@ -36,14 +36,14 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	var currentPeers []string
 	
 
-	if id == "" {
-		localIP, err := localip.LocalIP()
-		if err != nil {
-			log.Println(err)
-			localIP = "DISCONNECTED"
-		}
-		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+	
+	localIP, err := localip.LocalIP()
+	if err != nil {
+		log.Println(err)
+		localIP = "DISCONNECTED"
 	}
+	id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+	
 
 
 
@@ -201,6 +201,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		case <-ElevatorEmergency:
 			log.Println("Stop-Button has been pressed, all elevators should be notified and all orders for elevator :")
 			fmt.Sprintf("peer-%s-%d", localIP, id)
+			peerTxEnable <- false
 
 
 		case <-orderResend:
@@ -297,6 +298,8 @@ func OrderDelegator(stateMap map[string]utilities.State,
 			ip = elevator
 		}
 	}
+	log.Println("------CurrentPeers------")
+	log.Println(currentPeers)
 
 
 	log.Println("------FitnessMap------")
