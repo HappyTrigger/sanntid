@@ -12,7 +12,7 @@ import (
 const(
 	DoorOpenTime = 2*time.Second
 	No_order = -1
-	StatechangeInterval = 4*time.Second
+	//StatechangeInterval = 4*time.Second
 ) 
 
 var ElevatorState utilities.State
@@ -32,15 +32,15 @@ func Run(
 	BetweenFloors 	:= &ElevatorState.BetweenFloors 
 
 	var doorClose <-chan time.Time
-	var tempElevatorState utilities.State
-	StateChangeTimer := time.Tick(StatechangeInterval)
+	//var tempElevatorState utilities.State
+	//StateChangeTimer := time.Tick(StatechangeInterval)
 	Orders := make(map[int]driver.OrderEvent)
 
 	*DoorState		= false
 	*BetweenFloors 	= false
 	*Direction 		= driver.Down
 	*lastPassedFloor = driver.Elev_get_floor_sensor_signal()
-	tempElevatorState = ElevatorState
+	//tempElevatorState = ElevatorState
 
 	if *lastPassedFloor == -1{
 		log.Fatal("[FATAL]\tElevator initialized between floors")
@@ -112,6 +112,7 @@ func Run(
 		case <-StopButton:
 			ElevatorEmergency<-true
 
+/*
 		case <-StateChangeTimer:
 			if !*BetweenFloors && !*DoorState{
 				//system is idle
@@ -122,7 +123,7 @@ func Run(
 				tempElevatorState=ElevatorState
 			}
 
-
+*/
 
 
 			
