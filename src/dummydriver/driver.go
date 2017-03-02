@@ -33,8 +33,8 @@ func pollFloorSensor(sensorEventChan chan<- int) {
 func pollButtons(order chan<- OrderEvent) {
 	for{
 		
-		time.Sleep(3*time.Second)
-		order <- OrderEvent{2, ButtonType(Up),0}
+		//time.Sleep(3*time.Second)
+		//order <- OrderEvent{2, ButtonType(Up),0}
 	}	
 }
 

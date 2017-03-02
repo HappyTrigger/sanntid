@@ -21,6 +21,7 @@ const(
 	AllowedTimeBeforeEmergency = 5*time.Second
 )
 	var localIP string
+	var err error
 	var currentElevatorState utilities.State
 
 
@@ -34,16 +35,18 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 	var id string
 	var currentPeers []string
-	
 
-	
-	localIP, err := localip.LocalIP()
+	localIP, err = localip.LocalIP()
 	if err != nil {
 		log.Println(err)
 		localIP = "DISCONNECTED"
 	}
 	id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	
+	
+	//Test
+	//currentPeers = append(currentPeers, localIP)
+
 
 
 
@@ -84,6 +87,15 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 	log.Println("Starting")
 	log.Println("Local Ip : ", localIP)
+/*
+	go func() {
+		 for {
+		 	time.Sleep(3*time.Second)
+			reciveOrderFromPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
+
+		 }
+	}()
+*/
 
 	for {
 
@@ -95,6 +107,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			orderMap[msg.Checksum]=msg
 			sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum }
 			log.Println("Recived order from network")
+			log.Println("Local Ip in order : ", localIP)
 
 		
 
@@ -128,7 +141,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Printf("  New:      %q\n", p.New)
 			log.Printf("  Lost:     %q\n", p.Lost)
 			
-			currentPeers = p.Peers
+			//currentPeers = p.Peers
 
 			
 			if state, ok := stateMap[p.New]; ok { 
@@ -156,6 +169,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			stateMap[localIP]=state
 			currentElevatorState = state
 			sendStateToPeers<-state
+			log.Println("-----State-----")
+			log.Println(state)
 
 
 		case orderComplete:=<- recOrderCompleteFromPeers:
@@ -223,7 +238,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 // and combining them in a larger function, just to clean up the code.
 
 
-
 func OrderDelegator(stateMap map[string]utilities.State,
 	orderEvent driver.OrderEvent,currentPeers[]string,orderAssignedToMap map[int]string) bool {
 
@@ -245,7 +259,7 @@ func OrderDelegator(stateMap map[string]utilities.State,
 								fitnessMap[elevator]=float64(floorDifference)
 							}else{
 								//order Up below, and elevator moving up
-								fitnessMap[elevator] = float64(math.Abs(float64(floorDifference)) + float64((4-state.LastPassedFloor)*2))
+								fitnessMap[elevator] = float64(math.Abs(float64(floorDifference)) + float64((driver.N_FLOORS-state.LastPassedFloor)*2))
 							}
 						
 
@@ -259,8 +273,6 @@ func OrderDelegator(stateMap map[string]utilities.State,
 							}
 						}
 
-
-
 					case driver.Down: 
 						if state.Direction == driver.Down{
 							
@@ -273,10 +285,10 @@ func OrderDelegator(stateMap map[string]utilities.State,
 						}else{
 							//Order downwards above and elevator moving up
 							if floorDifference >=0 {
-								fitnessMap[elevator]=float64((4-state.LastPassedFloor)*2) - float64(floorDifference)
+								fitnessMap[elevator]=float64((driver.N_FLOORS-state.LastPassedFloor)*2) - float64(floorDifference)
 							}else{
 								//Order downwards bellow and elevator moving up
-								fitnessMap[elevator] = float64(math.Abs(float64(floorDifference)) + float64((4-state.LastPassedFloor)*2))
+								fitnessMap[elevator] = float64(math.Abs(float64(floorDifference)) + float64((driver.N_FLOORS-state.LastPassedFloor)*2))
 							}
 						}
 					}
@@ -298,13 +310,19 @@ func OrderDelegator(stateMap map[string]utilities.State,
 			ip = elevator
 		}
 	}
+	log.Println("Order assigned to :", ip)
+	log.Println("Local Ip: ", localIP)
+
 	log.Println("------CurrentPeers------")
 	log.Println(currentPeers)
 
-
 	log.Println("------FitnessMap------")
 	log.Println(fitnessMap)
+	for k,v := range fitnessMap{
+		log.Println("Ip: ",k, " - Fitness: ",v)
+	}
 	orderAssignedToMap[orderEvent.Checksum]=ip
+
 	if ip == localIP{
 		return true
 	}else{
