@@ -18,16 +18,13 @@ const (
 
 
 func pollFloorSensor(sensorEventChan chan<- int) {
-	state := -1
-
-	for {
-		sensorSignal := Elev_get_floor_sensor_signal()
-		if state != sensorSignal {
-			state = sensorSignal
-			sensorEventChan <- state
-		}
-		time.Sleep(PollInterval)
+	var i int
+	for{
+		i++
+		time.Sleep(7*time.Second)
+		sensorEventChan<-i
 	}
+	
 }
 
 func pollButtons(order chan<- OrderEvent) {

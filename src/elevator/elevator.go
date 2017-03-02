@@ -6,13 +6,14 @@ import (
 	"time"
 	".././driver"
 	//".././dummydriver"
-	//"reflect"
+
 )
 
 const(
+	ElevatorEmergencyTimeInterval = 6*time.Second
 	DoorOpenTime = 2*time.Second
 	No_order = -1
-	//StatechangeInterval = 4*time.Second
+	
 ) 
 
 var ElevatorState utilities.State
@@ -32,20 +33,18 @@ func Run(
 	BetweenFloors 	:= &ElevatorState.BetweenFloors 
 
 	var doorClose <-chan time.Time
-	//var tempElevatorState utilities.State
-	//StateChangeTimer := time.Tick(StatechangeInterval)
+	elevatorEmergencyTimer := time.NewTimer(ElevatorEmergencyTimeInterval)
 	Orders := make(map[int]driver.OrderEvent)
 
 	*DoorState		= false
 	*BetweenFloors 	= false
 	*Direction 		= driver.Down
 	*lastPassedFloor = driver.Elev_get_floor_sensor_signal()
-	//tempElevatorState = ElevatorState
+
 
 	if *lastPassedFloor == -1{
 		log.Fatal("[FATAL]\tElevator initialized between floors")
 	}
-
 
 
 
@@ -54,7 +53,6 @@ func Run(
 
 		case order:=<-NewOrder:
 			Orders[order.Checksum] = order
-			driver.Elev_set_button_lamp(order.Button,order.Floor,true)
 			log.Println("Order delegated to this elevator")
 
 			
@@ -71,7 +69,11 @@ func Run(
 					OrderComplete)
 
 				ElevatorStateToManager<-sendState()
+				if !elevatorEmergencyTimer.Stop() {
+					<-elevatorEmergencyTimer.C
 				}
+				elevatorEmergencyTimer.Reset(ElevatorEmergencyTimeInterval)
+			}
 
 
 
@@ -90,7 +92,11 @@ func Run(
 					OrderComplete)	
 
 				ElevatorStateToManager<-sendState()
+				if !elevatorEmergencyTimer.Stop() {
+					<-elevatorEmergencyTimer.C
 				}
+				elevatorEmergencyTimer.Reset(ElevatorEmergencyTimeInterval)
+			}
 				
 
 		case <-doorClose:
@@ -106,29 +112,28 @@ func Run(
 					OrderComplete)
 
 			ElevatorStateToManager<-sendState()
-
+			if !elevatorEmergencyTimer.Stop() {
+				<-elevatorEmergencyTimer.C
+			}
+			elevatorEmergencyTimer.Reset(ElevatorEmergencyTimeInterval)
 
 
 		case <-StopButton:
 			ElevatorEmergency<-true
 
-/*
-		case <-StateChangeTimer:
+
+		case <-elevatorEmergencyTimer.C:
+			//System is idle
 			if !*BetweenFloors && !*DoorState{
-				//system is idle
+				
+				elevatorEmergencyTimer.Reset(ElevatorEmergencyTimeInterval)
+
 			}else{
-				if reflect.DeepEqual(ElevatorState,tempElevatorState){
 					ElevatorEmergency<-true
-				}
-				tempElevatorState=ElevatorState
 			}
 
-*/
+		}	
 
-
-			
-
-		}
 	}
 }
 

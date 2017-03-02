@@ -17,8 +17,7 @@ import (
 
 
 const(
-	OrderResendInterval = 200*time.Millisecond
-	AllowedTimeBeforeEmergency = 5*time.Second
+	OrderResendInterval = 200*time.Millisecond 
 )
 	var localIP string
 	var err error
@@ -44,8 +43,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	
 	
-	//Test
-	//currentPeers = append(currentPeers, localIP)
+	
 
 
 
@@ -87,14 +85,20 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 	log.Println("Starting")
 	log.Println("Local Ip : ", localIP)
-/*
+
+
+//Test
+	/*
 	go func() {
-		 for {
+		time.Sleep(3*time.Second)
+		reciveOrderFromPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
+		 /*for {
 		 	time.Sleep(3*time.Second)
 			reciveOrderFromPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
 
 		 }
 	}()
+	currentPeers = append(currentPeers, localIP)
 */
 
 	for {
@@ -106,10 +110,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		case msg := <-reciveOrderFromPeers:
 			orderMap[msg.Checksum]=msg
 			sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum }
+			driver.Elev_set_button_lamp(msg.Button,msg.Floor,true) // This must be set on every elevator
 			log.Println("Recived order from network")
-			log.Println("Local Ip in order : ", localIP)
 
-		
 
 			if ok := OrderDelegator(stateMap,msg,currentPeers,orderAssignedToMap); ok{
 				SendOrderToElevator<-msg
@@ -169,8 +172,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			stateMap[localIP]=state
 			currentElevatorState = state
 			sendStateToPeers<-state
-			log.Println("-----State-----")
-			log.Println(state)
 
 
 		case orderComplete:=<- recOrderCompleteFromPeers:
@@ -200,6 +201,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			switch event.Button{
 				case driver.Internal:
 					SendOrderToElevator<-event
+					//Should probably rewrite this
+					driver.Elev_set_button_lamp(event.Button,event.Floor,true)
+
 
 				default: 
 					log.Println("sending order")
