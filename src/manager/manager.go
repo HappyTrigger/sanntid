@@ -17,7 +17,8 @@ import (
 
 
 const(
-	OrderResendInterval = 200*time.Millisecond 
+	OrderResendInterval = 200*time.Millisecond
+
 )
 	var localIP string
 	var err error
@@ -41,12 +42,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		localIP = "DISCONNECTED"
 	}
 	id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-	
-	
-	
-
-
-
 
 	orderMap 				:= make(map[int]driver.OrderEvent)
 	orderAssignedToMap 		:= make(map[int]string) // combine the checksum and IP of the given elevator
@@ -88,19 +83,19 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 //Test
-	/*
+/*	
 	go func() {
-		time.Sleep(3*time.Second)
-		reciveOrderFromPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
-		 /*for {
-		 	time.Sleep(3*time.Second)
+		//time.Sleep(3*time.Second)
+		//reciveOrderFromPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
+		 for {
+		 	time.Sleep(5*time.Second)
 			reciveOrderFromPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
 
 		 }
 	}()
 	currentPeers = append(currentPeers, localIP)
-*/
 
+*/
 	for {
 
 		select {
