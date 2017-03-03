@@ -103,21 +103,22 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case msg := <-reciveOrderFromPeers:
-			orderMap[msg.Checksum]=msg
-			sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum }
-			driver.Elev_set_button_lamp(msg.Button,msg.Floor,true) // This must be set on every elevator
-			log.Println("Recived order from network")
+			
+			_,ok := orderMap[msg.Checksum]; !ok{ //If order alread exist, dont process it
+				orderMap[msg.Checksum]=msg
 
+				sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum } // Could probably start a go-rotuine that spams the achnowledgmentchannel
+				driver.Elev_set_button_lamp(msg.Button,msg.Floor,true) // This must be set on every elevator as it is a requirement
 
-			if ok := OrderDelegator(stateMap,msg,currentPeers,orderAssignedToMap); ok{
-				SendOrderToElevator<-msg
+				if ok := OrderDelegator(stateMap,msg,currentPeers,orderAssignedToMap); ok{
+					SendOrderToElevator<-msg
+				}
 			}
-
 			
 
 		case state:= <-recvStateFromPeers:
 				if state.Ip == localIP && state.StateSentFromIp != localIP{ 
-					log.Println("Recieved state from another elevator")
+					log.Println("Internal orders recieved from : ", state.StateSentFromIp)
 					for _,internalOrder := range state.InternalOrders{
 						SendOrderToElevator<-internalOrder
 
@@ -139,7 +140,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Printf("  New:      %q\n", p.New)
 			log.Printf("  Lost:     %q\n", p.Lost)
 			
-			//currentPeers = p.Peers
+			currentPeers = p.Peers
 
 			
 			if state, ok := stateMap[p.New]; ok { 
@@ -170,7 +171,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case orderComplete:=<- recOrderCompleteFromPeers:
-			log.Println("Order at Floor:",orderComplete.Floor," completed by :", orderAssignedToMap[orderComplete.Checksum])
+			log.Println("Order at Floor:",orderComplete.Floor," completed")
 			delete(orderAssignedToMap,orderComplete.Checksum)
 			delete(orderMap,orderComplete.Checksum)
 
@@ -213,7 +214,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			// some check for both IPs must be implemented here before the order is deleted
 
 		case <-ElevatorEmergency:
-			log.Println("Stop-Button has been pressed, all elevators should be notified and all orders for elevator :")
+			log.Println("-------------------------------")
+			log.Println("ElevatorEmergency is now active")
+			log.Println("-------------------------------")
 			fmt.Sprintf("peer-%s-%d", localIP, id)
 			peerTxEnable <- false
 

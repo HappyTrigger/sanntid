@@ -125,7 +125,6 @@ func Run(
 		case <-elevatorEmergencyTimer.C:
 			//System is idle
 			if !*BetweenFloors && !*DoorState{
-				//log.Println("EmergencyTimer timed out, system is in idle")
 				elevatorEmergencyTimer.Reset(ElevatorEmergencyTimeInterval)
 
 			}else{
