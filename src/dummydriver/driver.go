@@ -19,10 +19,27 @@ const (
 
 func pollFloorSensor(sensorEventChan chan<- int) {
 	var i int
+	var dir bool
+	dir = true
 	for{
-		i++
-		time.Sleep(7*time.Second)
-		sensorEventChan<-i
+		switch dir{
+		case true:
+			i++
+			time.Sleep(3*time.Second)
+			sensorEventChan<-i
+			if i == 4{
+				dir = false
+			}
+		case false:
+			i--
+			time.Sleep(3*time.Second)
+			sensorEventChan<-i
+			if i==0{
+				dir = true
+			}
+		}
+
+
 	}
 	
 }

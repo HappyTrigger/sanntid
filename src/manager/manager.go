@@ -25,6 +25,9 @@ const(
 	var currentElevatorState utilities.State
 
 
+// Some init might be necessary to check if the elevator is re-initializing
+
+
 
 func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	DriverEvent <-chan driver.OrderEvent,
@@ -81,9 +84,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	log.Println("Starting")
 	log.Println("Local Ip : ", localIP)
 
-
 //Test
-/*	
+	/*
 	go func() {
 		//time.Sleep(3*time.Second)
 		//reciveOrderFromPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
@@ -94,17 +96,14 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		 }
 	}()
 	currentPeers = append(currentPeers, localIP)
-
 */
+
 	for {
 
 		select {
 
-
-
 		case msg := <-reciveOrderFromPeers:
-			
-			_,ok := orderMap[msg.Checksum]; !ok{ //If order alread exist, dont process it
+			if _,orderExist := orderMap[msg.Checksum]; !orderExist{ //If order alread exist, dont process it
 				orderMap[msg.Checksum]=msg
 
 				sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum } // Could probably start a go-rotuine that spams the achnowledgmentchannel
@@ -219,6 +218,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Println("-------------------------------")
 			fmt.Sprintf("peer-%s-%d", localIP, id)
 			peerTxEnable <- false
+
+			//Should re-initalize the elevator here.
 
 
 		case <-orderResend:

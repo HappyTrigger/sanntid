@@ -42,6 +42,8 @@ func Run(
 	*lastPassedFloor = driver.Elev_get_floor_sensor_signal()
 
 
+	ElevatorStateToManager<-sendState()
+
 	if *lastPassedFloor == -1{
 		log.Fatal("[FATAL]\tElevator initialized between floors")
 	}
