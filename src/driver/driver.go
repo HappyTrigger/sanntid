@@ -42,7 +42,7 @@ func pollButtons(order chan<- OrderEvent) {
 				if isPressed[ButtonType(button)][f] != elev_get_button_signal(ButtonType(button),f) {
 					isPressed[ButtonType(button)][f] = !isPressed[ButtonType(button)][f]
 					if isPressed[ButtonType(button)][f] {
-						order <- OrderEvent{f, ButtonType(button),0}
+						order <- OrderEvent{f, ButtonType(button)}
 					}
 				}
 			}

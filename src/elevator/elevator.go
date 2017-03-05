@@ -42,7 +42,8 @@ func Run(
 	*lastPassedFloor = driver.Elev_get_floor_sensor_signal()
 
 
-	ElevatorStateToManager<-sendState()
+	ElevatorStateToManager<-sendState() // Probably dont need the sendState function
+	// Depends if structs are passed as values rather than reference
 
 	if *lastPassedFloor == -1{
 		log.Fatal("[FATAL]\tElevator initialized between floors")
@@ -122,6 +123,9 @@ func Run(
 
 		case <-StopButton:
 			ElevatorEmergency<-true
+			driver.Elev_set_motor_direction(driver.MotorStop)
+			driver.Elev_set_stop_lamp(true)
+			//Reset the state, then send it.
 
 
 		case <-elevatorEmergencyTimer.C:
@@ -147,6 +151,7 @@ func Run(
 
 //This function can probably be rewritten to half its length, if you just irierate over one segment twice, but change
 //the direction for each iteration if no order in the current direction is found.
+// Could also be rewritten to several small functions. 
 func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 	Direction* driver.ButtonType,
 	LastPassedFloor* int,

@@ -17,7 +17,7 @@ import (
 
 
 const(
-	OrderResendInterval = 200*time.Millisecond
+	OrderResendInterval = 5*time.Millisecond
 
 )
 	var localIP string
@@ -45,10 +45,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		localIP = "DISCONNECTED"
 	}
 	id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-
 	orderMap 				:= make(map[int]driver.OrderEvent)
 	orderAssignedToMap 		:= make(map[int]string) // combine the checksum and IP of the given elevator
 	unconfirmedOrderMap 	:= make(map[int]driver.OrderEvent)
+	achnowledgementMap		:= make(map[int][]string)
 	stateMap 				:= make(map[string]utilities.State)
 	orderResend 			:= time.Tick(OrderResendInterval)
 
@@ -91,7 +91,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		//reciveOrderFromPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
 		 for {
 		 	time.Sleep(5*time.Second)
-			reciveOrderFromPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
+			sendOrderToPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
 
 		 }
 	}()
@@ -103,12 +103,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		select {
 
 		case msg := <-reciveOrderFromPeers:
+			sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum }
 			if _,orderExist := orderMap[msg.Checksum]; !orderExist{ //If order alread exist, dont process it
 				orderMap[msg.Checksum]=msg
-
-				sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum } // Could probably start a go-rotuine that spams the achnowledgmentchannel
 				driver.Elev_set_button_lamp(msg.Button,msg.Floor,true) // This must be set on every elevator as it is a requirement
-
 				if ok := OrderDelegator(stateMap,msg,currentPeers,orderAssignedToMap); ok{
 					SendOrderToElevator<-msg
 				}
@@ -126,11 +124,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 					stateMap[state.Ip]=state
 				}
 				
-			
-
-				//Will probably implement the constant elevator-checker here, to see if anyone doesnt update their state, including
-				//our own. If it does not, while we know it should be moving, then something is clearly wrong.
-				//And the elevator should be terminated from the system
 				
 
 		case p := <-peerUpdateCh:
@@ -140,7 +133,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Printf("  Lost:     %q\n", p.Lost)
 			
 			currentPeers = p.Peers
-
+			sendStateToPeers<-currentElevatorState // In case reconnection, send state before new orders are recived
 			
 			if state, ok := stateMap[p.New]; ok { 
 				log.Println("Reconnecting elevator, sending internal Orders")
@@ -176,6 +169,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case orderComplete:=<-ElevatorOrderComplete:
+			delete(orderMap,orderComplete.Checksum)
 			switch orderComplete.Button{
 				case driver.Internal:
 					log.Println("Internal Order complete")
@@ -184,7 +178,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				default: 
 					sendOrderCompleteToPeers<-orderComplete
 					delete(orderAssignedToMap,orderComplete.Checksum)
-					delete(orderMap,orderComplete.Checksum)
 			}
 
 
@@ -198,6 +191,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 					SendOrderToElevator<-event
 					//Should probably rewrite this
 					driver.Elev_set_button_lamp(event.Button,event.Floor,true)
+					orderMap[event.Checksum]=event
+					// implement for loop here, send internal orders
+
 
 
 				default: 
@@ -208,9 +204,36 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case ack:=<-recvAckFromPeers:
-			log.Println("Recieced achnowledge")
-			delete(unconfirmedOrderMap,ack.Checksum)
-			// some check for both IPs must be implemented here before the order is deleted
+			var achnowledgeIteration int
+			alreadyExist := false
+
+			achnowledgelist := achnowledgementMap[ack.Checksum]
+			for _,ip:= range achnowledgelist{
+				if ip == ack.Ip {
+					alreadyExist=true
+				}
+			}
+			if !alreadyExist{
+				achnowledgelist = append(achnowledgelist, ack.Ip)
+				achnowledgementMap[ack.Checksum] = achnowledgelist
+			}
+
+			for _,ip:= range achnowledgelist{
+				for _,peer:= range currentPeers{
+					if ip==peer{
+						achnowledgeIteration++
+					}
+				}
+			}
+			if achnowledgeIteration>=len(currentPeers){
+				log.Println("Recieced achnowledge")
+				delete(unconfirmedOrderMap,ack.Checksum)
+				delete(achnowledgementMap, ack.Checksum)
+			}
+
+
+
+			
 
 		case <-ElevatorEmergency:
 			log.Println("-------------------------------")
@@ -219,7 +242,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			fmt.Sprintf("peer-%s-%d", localIP, id)
 			peerTxEnable <- false
 
-			//Should re-initalize the elevator here.
+			//Should start some re-initalize of the elevator here.
 
 
 		case <-orderResend:
@@ -231,6 +254,25 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	}
 }
 
+
+
+
+// Rather than relying on elevator-events to spread states, we send it continously.
+//Need to create a new state channel that is directly linked to this function.
+func continousStateSender(sendToPeers chan<- utilities.State, recieveNewStateFromManager <- chan utilities.State) {
+	stateSender := time.Tick(1*time.Second)
+	var elevatorState utilities.State 
+	for{
+		select{
+		case <- stateSender:
+			sendToPeers<- elevatorState
+		case state :=<-recieveNewStateFromManager:
+			elevatorState = state
+			sendToPeers<- elevatorState
+
+		}
+	}
+}
 
 
 
