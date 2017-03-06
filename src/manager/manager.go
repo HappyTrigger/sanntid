@@ -1,4 +1,9 @@
 package manager
+/*
+The manager handels new and old information and executes action based on the information given. 
+It tracks other connected elevators, and handels order-delegation based on the states of every single elevator.
+The manager is also responsible for sending states, order-events and achnowledge messages from other elevators. 
+*/
 
 import (
 	".././utilities"
@@ -17,11 +22,10 @@ import (
 
 
 const(
-	OrderResendInterval = 5*time.Millisecond
+	OrderResendInterval = 50*time.Millisecond
 
 )
 	var localIP string
-	var err error
 	var currentElevatorState utilities.State
 
 
@@ -35,9 +39,11 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	ElevatorOrderComplete<-chan driver.OrderEvent,
 	ElevatorStateFromElevator <-chan utilities.State) {
 	
+	log.Println("staring manager")
 
 	var id string
 	var currentPeers []string
+	var err error
 
 	localIP, err = localip.LocalIP()
 	if err != nil {
@@ -45,17 +51,19 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		localIP = "DISCONNECTED"
 	}
 	id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+	log.Println("local id :", id)
+
 	orderMap 				:= make(map[int]driver.OrderEvent)
-	orderAssignedToMap 		:= make(map[int]string) // combine the checksum and IP of the given elevator
+	internalOrderMap		:= make(map[int]driver.OrderEvent)
 	unconfirmedOrderMap 	:= make(map[int]driver.OrderEvent)
+
+	orderAssignedToMap 		:= make(map[int]string) 
 	achnowledgementMap		:= make(map[int][]string)
 	stateMap 				:= make(map[string]utilities.State)
+
 	orderResend 			:= time.Tick(OrderResendInterval)
 
 
-	// We can disable/enable the transmitter after it has been started.
-	// This could be used to signal that we are somehow "unavailable".
-	//PeerTxenable
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
 	go peers.Transmitter(30201, id, peerTxEnable)
@@ -85,18 +93,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	log.Println("Local Ip : ", localIP)
 
 //Test
-	/*
-	go func() {
-		//time.Sleep(3*time.Second)
-		//reciveOrderFromPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
-		 for {
-		 	time.Sleep(5*time.Second)
-			sendOrderToPeers <- driver.OrderEvent{3, driver.ButtonType(driver.Down),0}
+	
 
-		 }
-	}()
-	currentPeers = append(currentPeers, localIP)
-*/
+
 
 	for {
 
@@ -118,6 +117,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 					log.Println("Internal orders recieved from : ", state.StateSentFromIp)
 					for _,internalOrder := range state.InternalOrders{
 						SendOrderToElevator<-internalOrder
+						currentElevatorState.InternalOrders=append(currentElevatorState.InternalOrders, internalOrder)
+						internalOrderMap[internalOrder.Checksum]=internalOrder
 
 					} 
 				}else{
@@ -169,15 +170,16 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case orderComplete:=<-ElevatorOrderComplete:
-			delete(orderMap,orderComplete.Checksum)
 			switch orderComplete.Button{
 				case driver.Internal:
 					log.Println("Internal Order complete")
+					delete(internalOrderMap,orderComplete.Checksum)
 					//could use a map here, iterate over it and send the internalOrder list to the other elevators
 
 				default: 
 					sendOrderCompleteToPeers<-orderComplete
 					delete(orderAssignedToMap,orderComplete.Checksum)
+					delete(orderMap,orderComplete.Checksum)
 			}
 
 
@@ -191,13 +193,14 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 					SendOrderToElevator<-event
 					//Should probably rewrite this
 					driver.Elev_set_button_lamp(event.Button,event.Floor,true)
-					orderMap[event.Checksum]=event
-					// implement for loop here, send internal orders
-
+					internalOrderMap[event.Checksum]=event
+					for _,order := range internalOrderMap{
+						currentElevatorState.InternalOrders = append(currentElevatorState.InternalOrders, order)
+					}
+					//Send state
 
 
 				default: 
-					log.Println("sending order")
 					sendOrderToPeers<-event
 					unconfirmedOrderMap[event.Checksum]=event
 			}
@@ -226,7 +229,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				}
 			}
 			if achnowledgeIteration>=len(currentPeers){
-				log.Println("Recieced achnowledge")
+				log.Println("Recieced achnowledge from all active elevators")
 				delete(unconfirmedOrderMap,ack.Checksum)
 				delete(achnowledgementMap, ack.Checksum)
 			}
@@ -259,6 +262,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 // Rather than relying on elevator-events to spread states, we send it continously.
 //Need to create a new state channel that is directly linked to this function.
+// Use stateFromElevator
 func continousStateSender(sendToPeers chan<- utilities.State, recieveNewStateFromManager <- chan utilities.State) {
 	stateSender := time.Tick(1*time.Second)
 	var elevatorState utilities.State 
@@ -281,6 +285,9 @@ func continousStateSender(sendToPeers chan<- utilities.State, recieveNewStateFro
 //This functions as it should. Can see if we want to rewrite it
 // into several small functions instead, splitting up the cost-functions
 // and combining them in a larger function, just to clean up the code.
+// The cost in general is up for discussion. This algorithm does not take into account
+// the time used opening and closing doors. 
+
 
 
 func OrderDelegator(stateMap map[string]utilities.State,

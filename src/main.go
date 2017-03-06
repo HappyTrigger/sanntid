@@ -1,11 +1,13 @@
 package main
-
+/*
+Main functions as a connectionpoint between modules, creating and sharing channels based on their needs.
+*/
 
 import (	
 	"./utilities"
 	"./manager"
 	"./elevator"
-	//"log"
+	"log"
 	"./driver"
 	//"./dummydriver"
 	"os"
@@ -59,7 +61,7 @@ func main() {
 		ElevatorState,
 		StopButton)
 
-
+	log.Println("Main completed")
 	select {
 
 	}

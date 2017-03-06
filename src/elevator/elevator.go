@@ -1,5 +1,10 @@
 package elevator
+/*
+The elevator-module is responsible for everything regarding the elevator control and exectution.
+It controls lighting, motorfunctioality, and keeps track of the current elevator-state. 
+It also sends state-updates to the manager when a state-change has been registerd.
 
+*/
 import (
 	".././utilities"
 	"log"
@@ -169,19 +174,19 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 			if *LastPassedFloor == v.Floor{
 				orderOnFloor=k //Send orderNumber back
 				driver.Elev_set_button_lamp(v.Button,v.Floor,false)
-				log.Println("Order on floor confirmed")
+				//log.Println("Order on floor confirmed")
 				OrderComplete<-v
 				delete(orders,k)
 			}
 			if *Direction == driver.Up{
 				if v.Floor>*LastPassedFloor{
 					orderOnNextFloors=true
-					log.Println("Order on the floor above")
+					//log.Println("Order on the floor above")
 				}
 			}else{
 				if v.Floor<*LastPassedFloor{
 					orderOnNextFloors=true
-					log.Println("Order on the floor below")
+					//log.Println("Order on the floor below")
 				}
 			}
 		}else{
@@ -214,17 +219,17 @@ func OrderOnTheFloor(orders map[int]driver.OrderEvent,
 					driver.Elev_set_button_lamp(v.Button,v.Floor,false)
 					OrderComplete<-v
 					delete(orders,k)
-					log.Println("Order on floor confirmed")
+					//log.Println("Order on floor confirmed")
 				}
 				if *Direction == driver.Up{
 					if v.Floor>*LastPassedFloor{
 						orderOnNextFloors=true
-						log.Println("Order on the floor above")
+						//log.Println("Order on the floor above")
 					}
 				}else{
 					if v.Floor<*LastPassedFloor{
 						orderOnNextFloors=true
-						log.Println("Order on the floor below")
+						//log.Println("Order on the floor below")
 					}
 				}
 			}else{
