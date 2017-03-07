@@ -52,6 +52,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	}
 	id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	log.Println("local id :", id)
+	localIP=id
 
 	orderMap 				:= make(map[int]driver.OrderEvent)
 	internalOrderMap		:= make(map[int]driver.OrderEvent)
@@ -167,6 +168,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Println("Order at Floor:",orderComplete.Floor," completed")
 			delete(orderAssignedToMap,orderComplete.Checksum)
 			delete(orderMap,orderComplete.Checksum)
+			driver.Elev_set_button_lamp(orderComplete.Button, orderComplete.Floor, false)
 
 
 		case orderComplete:=<-ElevatorOrderComplete:
