@@ -25,7 +25,8 @@ const(
 	OrderResendInterval = 50*time.Millisecond
 
 )
-	var localIP string
+	var localId string
+	
 	var currentElevatorState utilities.State
 
 
@@ -41,18 +42,19 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	
 	log.Println("staring manager")
 
-	var id string
 	var currentPeers []string
 	var err error
+	var localIP string
+	
 
 	localIP, err = localip.LocalIP()
 	if err != nil {
 		log.Println(err)
 		localIP = "DISCONNECTED"
 	}
-	id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-	log.Println("local id :", id)
-	localIP=id
+	localId = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+	log.Println("local id :", localId)
+
 
 	orderMap 				:= make(map[int]driver.OrderEvent)
 	internalOrderMap		:= make(map[int]driver.OrderEvent)
@@ -67,7 +69,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
-	go peers.Transmitter(30201, id, peerTxEnable)
+	go peers.Transmitter(30201, localId, peerTxEnable)
 	go peers.Receiver(30201, peerUpdateCh)
 
 	sendOrderToPeers :=make(chan driver.OrderEvent)
@@ -91,7 +93,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	go bcast.Receiver(30205, recvAckFromPeers)
 
 	log.Println("Starting")
-	log.Println("Local Ip : ", localIP)
+	log.Println("Local Ip : ", localId)
 
 //Test
 	
@@ -103,7 +105,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		select {
 
 		case msg := <-reciveOrderFromPeers:
-			sendAckToPeers<-utilities.Achnowledgement{Ip:localIP, Checksum: msg.Checksum }
+			sendAckToPeers<-utilities.Achnowledgement{Id:localId, Checksum: msg.Checksum }
 			if _,orderExist := orderMap[msg.Checksum]; !orderExist{ //If order alread exist, dont process it
 				orderMap[msg.Checksum]=msg
 				driver.Elev_set_button_lamp(msg.Button,msg.Floor,true) // This must be set on every elevator as it is a requirement
@@ -114,8 +116,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			
 
 		case state:= <-recvStateFromPeers:
-				if state.Ip == localIP && state.StateSentFromIp != localIP{ 
-					log.Println("Internal orders recieved from : ", state.StateSentFromIp)
+				if state.Id == localId && state.StateSentFromId != localId{ 
+					log.Println("Internal orders recieved from : ", state.StateSentFromId)
 					for _,internalOrder := range state.InternalOrders{
 						SendOrderToElevator<-internalOrder
 						currentElevatorState.InternalOrders=append(currentElevatorState.InternalOrders, internalOrder)
@@ -123,7 +125,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 					} 
 				}else{
-					stateMap[state.Ip]=state
+					stateMap[state.Id]=state
 				}
 				
 				
@@ -137,16 +139,16 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			currentPeers = p.Peers
 			sendStateToPeers<-currentElevatorState // In case reconnection, send state before new orders are recived
 			
-			if state, ok := stateMap[p.New]; ok && state.StateSentFromIp != localIP{ 
+			if state, ok := stateMap[p.New]; ok && state.StateSentFromId != localId{ 
 				log.Println("Reconnecting elevator, sending internal Orders")
-				state.StateSentFromIp = localIP
+				state.StateSentFromId = localId
     			sendStateToPeers<-state
 			}
 			
 
-			for _,lostIp:= range p.Lost {
-					for checksum,ip:= range orderAssignedToMap{
-						if ip==lostIp{
+			for _,lostId:= range p.Lost {
+					for checksum,Id:= range orderAssignedToMap{
+						if Id==lostId{
 							msg := orderMap[checksum]
 							if ok := OrderDelegator(stateMap,msg,currentPeers,orderAssignedToMap); ok{
 								SendOrderToElevator<-msg
@@ -158,9 +160,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case state:= <-ElevatorStateFromElevator:
-			state.Ip,state.StateSentFromIp = localIP,localIP
-			log.Println("ID : ", state.StateSentFromIp)
-			stateMap[localIP]=state
+			state.Id,state.StateSentFromId = localId,localId
+			stateMap[localId]=state
 			currentElevatorState = state
 			sendStateToPeers<-state
 
@@ -213,19 +214,19 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			alreadyExist := false
 
 			achnowledgelist := achnowledgementMap[ack.Checksum]
-			for _,ip:= range achnowledgelist{
-				if ip == ack.Ip {
+			for _,Id:= range achnowledgelist{
+				if Id == ack.Id {
 					alreadyExist=true
 				}
 			}
 			if !alreadyExist{
-				achnowledgelist = append(achnowledgelist, ack.Ip)
+				achnowledgelist = append(achnowledgelist, ack.Id)
 				achnowledgementMap[ack.Checksum] = achnowledgelist
 			}
 
-			for _,ip:= range achnowledgelist{
+			for _,Id:= range achnowledgelist{
 				for _,peer:= range currentPeers{
-					if ip==peer{
+					if Id==peer{
 						achnowledgeIteration++
 					}
 				}
@@ -244,7 +245,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Println("-------------------------------")
 			log.Println("ElevatorEmergency is now active")
 			log.Println("-------------------------------")
-			fmt.Sprintf("peer-%s-%d", localIP, id)
 			peerTxEnable <- false
 
 			//Should start some re-initalize of the elevator here.
@@ -265,7 +265,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 // Rather than relying on elevator-events to spread states, we send it continously.
 //Need to create a new state channel that is directly linked to this function.
 // Use stateFromElevator
-//Think this is a bad solution, should just start a standar go-routine as we did with the order resend. 
+//Think this is a bad solution
 func continousStateSender(sendToPeers chan<- utilities.State, recieveNewStateFromManager <- chan utilities.State) {
 	stateSender := time.Tick(1*time.Second)
 	var elevatorState utilities.State 
@@ -352,20 +352,21 @@ func OrderDelegator(stateMap map[string]utilities.State,
 	}
 	var minFitness float64
 	minFitness = 20
-	var ip string
-	for elevator, fitness := range fitnessMap{
+	var currentId string
+	for elevatorId, fitness := range fitnessMap{
 		if fitness == minFitness{
-			if elevator > ip{
-				ip = elevator
-			} // Elevator with highest IP takes the order
+			if elevatorId > currentId{
+				currentId = elevatorId
+			} // ElevatorId with highest id takes the order
 		}
 		if fitness < minFitness{
 			minFitness = fitness
-			ip = elevator
+			currentId = elevatorId
 		}
 	}
-	log.Println("Order assigned to :", ip)
-	log.Println("Local Ip: ", localIP)
+/*
+	log.Println("Order assigned to :", currentId)
+	log.Println("Local id: ", localId)
 
 	log.Println("------CurrentPeers------")
 	log.Println(currentPeers)
@@ -373,11 +374,12 @@ func OrderDelegator(stateMap map[string]utilities.State,
 	log.Println("------FitnessMap------")
 	log.Println(fitnessMap)
 	for k,v := range fitnessMap{
-		log.Println("Ip: ",k, " - Fitness: ",v)
+		log.Println("id: ",k, " - Fitness: ",v)
 	}
-	orderAssignedToMap[orderEvent.Checksum]=ip
+*/
+	orderAssignedToMap[orderEvent.Checksum]=currentId
 
-	if ip == localIP{
+	if currentId == localId{
 		return true
 	}else{
 		log.Println("Did not take order")

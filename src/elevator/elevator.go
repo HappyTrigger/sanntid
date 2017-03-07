@@ -87,9 +87,9 @@ func Run(
 
 
 		case *lastPassedFloor = <-SensorEvent:
-			log.Println("On Floor ", *lastPassedFloor)
 			driver.Elev_set_floor_indicator(*lastPassedFloor)
 			if *lastPassedFloor !=-1 {
+				log.Println("On Floor ", *lastPassedFloor)
 				elevatorControl(
 					DoorState,
 					BetweenFloors,

@@ -8,17 +8,17 @@ import(
 
 type Achnowledgement struct {
 	Checksum int
-	Ip string
+	Id string
 }
 
 type State struct{
-	Ip string
+	Id string
 	LastPassedFloor int
 	Direction driver.ButtonType
 	DoorState bool
 	BetweenFloors bool
 	InternalOrders []driver.OrderEvent
-	StateSentFromIp string
+	StateSentFromId string
 	
 }
 
