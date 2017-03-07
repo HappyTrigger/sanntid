@@ -104,7 +104,7 @@ func init(){
 
     Elev_set_motor_direction(MotorStop)
     Elev_set_floor_indicator(Elev_get_floor_sensor_signal())
-    log.Println("Floor in driver: ", Elev_get_floor_sensor_signal())
+
 }
 
 

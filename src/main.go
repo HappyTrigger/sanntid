@@ -7,9 +7,7 @@ import (
 	"./utilities"
 	"./manager"
 	"./elevator"
-	"log"
 	"./driver"
-	//"./dummydriver"
 	"os"
 	"os/signal"
 )
@@ -61,7 +59,6 @@ func main() {
 		ElevatorState,
 		StopButton)
 
-	log.Println("Main completed")
 	select {
 
 	}

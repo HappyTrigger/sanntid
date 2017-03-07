@@ -40,20 +40,15 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	ElevatorOrderComplete<-chan driver.OrderEvent,
 	ElevatorStateFromElevator <-chan utilities.State) {
 	
-	log.Println("staring manager")
 
 	var currentPeers []string
-	var err error
-	var localIP string
-	
 
-	localIP, err = localip.LocalIP()
+	localIP, err := localip.LocalIP()
 	if err != nil {
 		log.Println(err)
 		localIP = "DISCONNECTED"
 	}
 	localId = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-	log.Println("local id :", localId)
 
 
 	orderMap 				:= make(map[int]driver.OrderEvent)
@@ -92,8 +87,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	go bcast.Transmitter(30205, sendAckToPeers)
 	go bcast.Receiver(30205, recvAckFromPeers)
 
-	log.Println("Starting")
-	log.Println("Local Ip : ", localId)
+	log.Println("Local Id : ", localId)
 
 //Test
 	
@@ -200,8 +194,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 						currentElevatorState.InternalOrders = append(currentElevatorState.InternalOrders, order)
 					}
 					sendStateToPeers<-currentElevatorState
-					
-
 
 				default: 
 					sendOrderToPeers<-event
