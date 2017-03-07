@@ -137,7 +137,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			currentPeers = p.Peers
 			sendStateToPeers<-currentElevatorState // In case reconnection, send state before new orders are recived
 			
-			if state, ok := stateMap[p.New]; ok { 
+			if state, ok := stateMap[p.New]; ok && state.StateSentFromIp != localIP{ 
 				log.Println("Reconnecting elevator, sending internal Orders")
 				state.StateSentFromIp = localIP
     			sendStateToPeers<-state
@@ -159,6 +159,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 		case state:= <-ElevatorStateFromElevator:
 			state.Ip,state.StateSentFromIp = localIP,localIP
+			log.Println("ID : ", state.StateSentFromIp)
 			stateMap[localIP]=state
 			currentElevatorState = state
 			sendStateToPeers<-state
@@ -193,13 +194,12 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			switch event.Button{
 				case driver.Internal:
 					SendOrderToElevator<-event
-					//Should probably rewrite this
-					driver.Elev_set_button_lamp(event.Button,event.Floor,true)
 					internalOrderMap[event.Checksum]=event
 					for _,order := range internalOrderMap{
 						currentElevatorState.InternalOrders = append(currentElevatorState.InternalOrders, order)
 					}
-					//Send state
+					sendStateToPeers<-currentElevatorState
+					
 
 
 				default: 
@@ -265,6 +265,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 // Rather than relying on elevator-events to spread states, we send it continously.
 //Need to create a new state channel that is directly linked to this function.
 // Use stateFromElevator
+//Think this is a bad solution, should just start a standar go-routine as we did with the order resend. 
 func continousStateSender(sendToPeers chan<- utilities.State, recieveNewStateFromManager <- chan utilities.State) {
 	stateSender := time.Tick(1*time.Second)
 	var elevatorState utilities.State 
@@ -289,7 +290,6 @@ func continousStateSender(sendToPeers chan<- utilities.State, recieveNewStateFro
 // and combining them in a larger function, just to clean up the code.
 // The cost in general is up for discussion. This algorithm does not take into account
 // the time used opening and closing doors. 
-
 
 
 func OrderDelegator(stateMap map[string]utilities.State,

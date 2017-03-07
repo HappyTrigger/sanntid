@@ -62,7 +62,7 @@ func Run(
 		case order:=<-NewOrder:
 			Orders[order.Checksum] = order
 			log.Println("Order delegated to this elevator")
-
+			driver.Elev_set_button_lamp(order.Button,order.Floor,true)
 			
 
 			if !*BetweenFloors && !*DoorState {

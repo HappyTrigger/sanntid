@@ -104,6 +104,7 @@ func init(){
 
     Elev_set_motor_direction(MotorStop)
     Elev_set_floor_indicator(Elev_get_floor_sensor_signal())
+    log.Println("Floor in driver: ", Elev_get_floor_sensor_signal())
 }
 
 
@@ -151,7 +152,7 @@ func Elev_set_button_lamp(button ButtonType,floor int,value bool) {
 
 
 func Elev_set_floor_indicator(floor int) {
-    if floor > 0 && floor < N_FLOORS{
+    if floor >= 0 && floor < N_FLOORS{
     	if floor & 0x02!=0{
         	io.SetBit(LIGHT_FLOOR_IND1)
     	}else {
