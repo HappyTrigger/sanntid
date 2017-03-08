@@ -34,6 +34,7 @@ const(
 // Some init might be necessary to check if the elevator is re-initializing
 
 func Init(reciveStateFromPeers <-chan utilities.State,
+	sendStateToPeers chan <- utilities.State,
 	ElevatorStateFromElevator <-chan utilities.State,
 	SendOrderToElevator chan<- driver.OrderEvent,
 	internalOrderMap map[int]driver.OrderEvent, ) {
@@ -58,16 +59,16 @@ func Init(reciveStateFromPeers <-chan utilities.State,
 			case state:=<-ElevatorStateFromElevator:
 				currentElevatorState = state 
 
+
 			
 		}
 	}
 	go func(){
 		for _,orders := range internalOrderSlice{
-			log.Println("Sending internal orders")
-			log.Println(orders)
 			SendOrderToElevator<-orders
 		}
 	}()
+	sendNewStateToPeers(sendStateToPeers,internalOrderMap)
 
 }
 
@@ -142,6 +143,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 	
 	Init(recvStateFromPeers,
+		sendStateToPeers,
 		ElevatorStateFromElevator,
 		SendOrderToElevator,
 		internalOrderMap)
@@ -166,6 +168,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 		case state:= <-recvStateFromPeers:
 			stateMap[state.Id]=state
+			if state.Id == localId{
+				log.Println(state)
+			}
 				
 				
 				
@@ -184,6 +189,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				log.Println(state)
     			sendStateToPeers<-state
 			}
+			log.Println(currentElevatorState)
 			
 
 			for _,lostId:= range p.Lost {
@@ -293,7 +299,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				sendOrderToPeers<-v
 			}
 		case <-stateResend:
-			//log.Println(currentElevatorState)
+			//log.Println("CurrentStateResend")
+			//Println(currentElevatorState)
 			sendStateToPeers<-currentElevatorState
 		
 		case <- orderNotCompleted:
@@ -412,7 +419,11 @@ func OrderDelegator(stateMap map[string]utilities.State,
 	}
 
 	orderAssignedToMap[orderEvent.Checksum]=currentId
+	log.Println("Fitness")
+	log.Println(fitnessMap)
 
+	log.Println("States")
+	log.Println(stateMap)
 	if currentId == localId{
 		return true
 	}else{
