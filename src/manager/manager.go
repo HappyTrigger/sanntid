@@ -112,7 +112,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				case state:= <-recvStateFromPeers:
 					log.Println("recived states")
 					log.Println(state)
-					if state.Id == localId && state.StateSentFromId != localId{ 
+					if state.Id == localId{ 
 						log.Println("Internal orders recieved from : ", state.StateSentFromId)
 						log.Println(state)
 						for _,internalOrder := range state.InternalOrders{
@@ -178,9 +178,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Printf("  Lost:     %q\n", p.Lost)
 			
 			currentPeers = p.Peers
-			sendStateToPeers<-currentElevatorState // In case reconnection, send state before new orders are recived
 			
-			if state, ok := stateMap[p.New]; ok && state.StateSentFromId != localId{ 
+			if state, ok := stateMap[p.New]; ok {//&& state.StateSentFromId != localId{ 
 				log.Println("Reconnecting elevator, sending internal Orders")
 				state.StateSentFromId = localId
 				log.Println("Sending state to reconnecting elevator")
@@ -203,7 +202,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 		case state:= <-ElevatorStateFromElevator:
-			state.Id,state.StateSentFromId = localId,localId
 			stateMap[localId]=state
 			currentElevatorState = state
 			sendNewStateToPeers(sendStateToPeers,internalOrderMap)
@@ -322,6 +320,8 @@ func sendNewStateToPeers(stateToPeers chan<- utilities.State,
 	internalOrders map[int]driver.OrderEvent) {
 	
 	var internalOrderSlice []driver.OrderEvent
+
+	currentElevatorState.Id,currentElevatorState.StateSentFromId = localId,localId
 	
 	for _,order := range internalOrders{
 		internalOrderSlice = append(internalOrderSlice, order)
