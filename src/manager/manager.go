@@ -16,7 +16,7 @@ import (
 	"os"
 	"fmt"
 	"math"
-	"flag"
+
 
 )
 
@@ -40,14 +40,14 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	DriverEvent <-chan driver.OrderEvent,
 	ElevatorEmergency <-chan bool,
 	ElevatorOrderComplete<-chan driver.OrderEvent,
-	ElevatorStateFromElevator <-chan utilities.State) {
+	ElevatorStateFromElevator <-chan utilities.State,
+	Id string) {
 	
 
 
 	var currentPeers []string
 
-	flag.StringVar(&localId, "id", "", "id of this peer")
-	flag.Parse()
+	localId = Id
 
 	if localId == "" {
 		localIP, err := localip.LocalIP()
@@ -101,6 +101,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 	log.Println("Local Id : ", localId)
 
+	
 	c := make(chan bool)
 
 	go func() {

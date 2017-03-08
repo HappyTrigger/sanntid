@@ -10,9 +10,15 @@ import (
 	"./driver"
 	"os"
 	"os/signal"
+	"flag"
 )
 
 func main() {
+	var id string
+	flag.StringVar(&id, "id", "", "id of this peer")
+	flag.Parse()
+
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func(){
@@ -54,7 +60,8 @@ func main() {
 		DriverEvent,
 		ElevatorEmergency,
 		ElevatorOrderComplete,
-		ElevatorState)
+		ElevatorState,
+		id)
 	
 	select {
 
