@@ -1,15 +1,11 @@
 package elevator
 
-
 type State int
 
-const(
+const (
 	State_idle State = iota
 	State_moving
-
 )
-
-
 
 /*
 type DoorState bool
@@ -19,4 +15,3 @@ const(
 	DoorClosed = false
 )
 */
-

@@ -1,9 +1,8 @@
 package driver
 
+type ButtonType int
 
-type ButtonType int  
-
-const(
+const (
 	Up ButtonType = iota
 	Down
 	Internal
@@ -17,10 +16,8 @@ const (
 	MotorDown
 )
 
-type OrderEvent struct{
-	Floor int
-	Button ButtonType 
+type OrderEvent struct {
+	Floor    int
+	Button   ButtonType
 	Checksum int
 }
-
-
