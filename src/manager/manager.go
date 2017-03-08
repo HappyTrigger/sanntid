@@ -101,7 +101,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 	log.Println("Local Id : ", localId)
 
-	
+	/*
 	c := make(chan bool)
 
 	go func() {
@@ -134,7 +134,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	}()
 	
 	<-c
-
+*/
 
 	for {
 
