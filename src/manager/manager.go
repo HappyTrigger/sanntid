@@ -38,7 +38,7 @@ func Init(reciveStateFromPeers <-chan utilities.State,
 	SendOrderToElevator chan<- driver.OrderEvent,
 	internalOrderMap map[int]driver.OrderEvent, ) {
 	
-
+	var internalOrderSlice []driver.OrderEvent
 	timeout := time.After(200*time.Millisecond)
 	
 	loop:
@@ -46,22 +46,23 @@ func Init(reciveStateFromPeers <-chan utilities.State,
 		select{
 			case state:= <-reciveStateFromPeers:
 				if state.Id == localId{ 
-					log.Println("Internal orders recieved from : ", state.StateSentFromId)
-					log.Println(state)
+					
 					for _,internalOrder := range state.InternalOrders{
-						currentElevatorState.InternalOrders=append(currentElevatorState.InternalOrders, internalOrder)
+						internalOrderSlice=append(internalOrderSlice, internalOrder)
 						internalOrderMap[internalOrder.Checksum]=internalOrder
 					}
 				}
 			case <-timeout:
 				log.Println("First init of elevator")
 				break loop
-			case <-ElevatorStateFromElevator:
+			case state:=<-ElevatorStateFromElevator:
+				currentElevatorState = state 
+
 			
 		}
 	}
 	go func(){
-		for _,orders := range currentElevatorState.InternalOrders{
+		for _,orders := range internalOrderSlice{
 			log.Println("Sending internal orders")
 			log.Println(orders)
 			SendOrderToElevator<-orders
