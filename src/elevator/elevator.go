@@ -6,11 +6,11 @@ It also sends state-updates to the manager when a state-change has been register
 
 */
 import (
-	".././utilities"
+	"../utilities"
 	"log"
 	"time"
-	".././driver"
-	//".././dummydriver"
+	"../driver"
+
 
 )
 

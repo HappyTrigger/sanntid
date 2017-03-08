@@ -6,23 +6,25 @@ The manager is also responsible for sending states, order-events and achnowledge
 */
 
 import (
-	".././utilities"
+	"../utilities"
 	"log"
 	"time"
-	//".././dummydriver"
-	".././driver"
-	".././network/bcast"
-	".././network/localip"
-	".././network/peers"
+	"../driver"
+	"../network/bcast"
+	"../network/localip"
+	"../network/peers"
 	"os"
 	"fmt"
 	"math"
+	"flag"
 
 )
 
 
 const(
 	OrderResendInterval = 50*time.Millisecond
+	StateResendInterval = 100*time.Millisecond
+	orderNotCompletedInterval = 2*time.Second
 
 )
 	var localId string
@@ -41,14 +43,20 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	ElevatorStateFromElevator <-chan utilities.State) {
 	
 
+
 	var currentPeers []string
 
-	localIP, err := localip.LocalIP()
-	if err != nil {
-		log.Println(err)
-		localIP = "DISCONNECTED"
+	flag.StringVar(&localId, "id", "", "id of this peer")
+	flag.Parse()
+
+	if localId == "" {
+		localIP, err := localip.LocalIP()
+		if err != nil {
+			fmt.Println(err)
+			localIP = "DISCONNECTED"
+		}
+		localId = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
-	localId = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 
 
 	orderMap 				:= make(map[int]driver.OrderEvent)
@@ -58,8 +66,12 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	orderAssignedToMap 		:= make(map[int]string) 
 	achnowledgementMap		:= make(map[int][]string)
 	stateMap 				:= make(map[string]utilities.State)
+	orderRecievedAtTime		:= make(map[int]time.Time)
 
 	orderResend 			:= time.Tick(OrderResendInterval)
+	stateResend 			:= time.Tick(StateResendInterval)
+	orderNotCompleted		:= time.Tick(orderNotCompletedInterval)
+
 
 
 	peerUpdateCh := make(chan peers.PeerUpdate)
@@ -101,6 +113,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		case msg := <-reciveOrderFromPeers:
 			sendAckToPeers<-utilities.Achnowledgement{Id:localId, Checksum: msg.Checksum }
 			if _,orderExist := orderMap[msg.Checksum]; !orderExist{ //If order alread exist, dont process it
+				orderRecievedAtTime[msg.Checksum]=time.Now()
 				orderMap[msg.Checksum]=msg
 				driver.Elev_set_button_lamp(msg.Button,msg.Floor,true) // This must be set on every elevator as it is a requirement
 				if ok := OrderDelegator(stateMap,msg,currentPeers,orderAssignedToMap); ok{
@@ -178,6 +191,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 					sendOrderCompleteToPeers<-orderComplete
 					delete(orderAssignedToMap,orderComplete.Checksum)
 					delete(orderMap,orderComplete.Checksum)
+					delete (orderRecievedAtTime, orderComplete.Checksum)
 			}
 
 
@@ -246,30 +260,21 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			for _,v:=range unconfirmedOrderMap{
 				sendOrderToPeers<-v
 			}
-			
-		}
-	}
-}
+		case <-stateResend:
+			sendStateToPeers<-currentElevatorState
+		
+		case <- orderNotCompleted:
+			for checksum,timeSince := range orderRecievedAtTime{
+				if time.Since(timeSince)>20*time.Second {
+					if ok := OrderDelegator(stateMap,orderMap[checksum],currentPeers,orderAssignedToMap); ok{
+						SendOrderToElevator<-orderMap[checksum]
+					}
+				}			
+			}
 
 
 
-
-// Rather than relying on elevator-events to spread states, we send it continously.
-//Need to create a new state channel that is directly linked to this function.
-// Use stateFromElevator
-//Think this is a bad solution
-func continousStateSender(sendToPeers chan<- utilities.State, recieveNewStateFromManager <- chan utilities.State) {
-	stateSender := time.Tick(1*time.Second)
-	var elevatorState utilities.State 
-	for{
-		select{
-		case <- stateSender:
-			sendToPeers<- elevatorState
-		case state :=<-recieveNewStateFromManager:
-			elevatorState = state
-			sendToPeers<- elevatorState
-
-		}
+		} 
 	}
 }
 
@@ -349,26 +354,14 @@ func OrderDelegator(stateMap map[string]utilities.State,
 		if fitness == minFitness{
 			if elevatorId > currentId{
 				currentId = elevatorId
-			} // ElevatorId with highest id takes the order
+			}
 		}
 		if fitness < minFitness{
 			minFitness = fitness
 			currentId = elevatorId
 		}
 	}
-/*
-	log.Println("Order assigned to :", currentId)
-	log.Println("Local id: ", localId)
 
-	log.Println("------CurrentPeers------")
-	log.Println(currentPeers)
-
-	log.Println("------FitnessMap------")
-	log.Println(fitnessMap)
-	for k,v := range fitnessMap{
-		log.Println("id: ",k, " - Fitness: ",v)
-	}
-*/
 	orderAssignedToMap[orderEvent.Checksum]=currentId
 
 	if currentId == localId{
