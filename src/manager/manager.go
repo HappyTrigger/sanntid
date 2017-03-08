@@ -125,7 +125,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		case state:= <-recvStateFromPeers:
 				if state.Id == localId && state.StateSentFromId != localId{ 
 					log.Println("Internal orders recieved from : ", state.StateSentFromId)
+					log.Println(state)
 					for _,internalOrder := range state.InternalOrders{
+						log.Println(internalOrder)
 						SendOrderToElevator<-internalOrder
 						currentElevatorState.InternalOrders=append(currentElevatorState.InternalOrders, internalOrder)
 						internalOrderMap[internalOrder.Checksum]=internalOrder
@@ -133,6 +135,9 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 					} 
 				}else{
 					stateMap[state.Id]=state
+					if state.Id != localId{
+						log.Println(state)
+					}
 				}
 				
 				
@@ -170,6 +175,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			state.Id,state.StateSentFromId = localId,localId
 			stateMap[localId]=state
 			currentElevatorState = state
+			sendNewStateToPeers(sendStateToPeers,internalOrderMap)
 			
 
 
@@ -260,6 +266,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				sendOrderToPeers<-v
 			}
 		case <-stateResend:
+			//log.Println(currentElevatorState)
 			sendStateToPeers<-currentElevatorState
 		
 		case <- orderNotCompleted:

@@ -38,16 +38,6 @@ func main() {
 	StopButton := make(chan bool)
 
 
-	go manager.Run(
-		SendOrderToElevator,
-		DriverEvent,
-		ElevatorEmergency,
-		ElevatorOrderComplete,
-		ElevatorState)
-	
-
-
-
 	driver.Init(DriverEvent,SensorEvent,StopButton)
 	
 
@@ -58,7 +48,14 @@ func main() {
 		ElevatorOrderComplete,
 		ElevatorState,
 		StopButton)
-
+	
+	go manager.Run(
+		SendOrderToElevator,
+		DriverEvent,
+		ElevatorEmergency,
+		ElevatorOrderComplete,
+		ElevatorState)
+	
 	select {
 
 	}
