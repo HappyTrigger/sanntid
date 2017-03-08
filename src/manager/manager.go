@@ -28,11 +28,49 @@ const(
 
 )
 	var localId string
-	
 	var currentElevatorState utilities.State
 
 
 // Some init might be necessary to check if the elevator is re-initializing
+
+func Init(reciveStateFromPeers <-chan utilities.State,
+	ElevatorStateFromElevator <-chan utilities.State,
+	SendOrderToElevator chan<- driver.OrderEvent,
+	internalOrderMap map[int]driver.OrderEvent, ) {
+	
+
+	timeout := time.After(200*time.Millisecond)
+	
+	loop:
+	for{
+		select{
+			case state:= <-reciveStateFromPeers:
+				if state.Id == localId{ 
+					log.Println("Internal orders recieved from : ", state.StateSentFromId)
+					log.Println(state)
+					for _,internalOrder := range state.InternalOrders{
+						currentElevatorState.InternalOrders=append(currentElevatorState.InternalOrders, internalOrder)
+						internalOrderMap[internalOrder.Checksum]=internalOrder
+					}
+				}
+			case <-timeout:
+				log.Println("First init of elevator")
+				break loop
+			case <-ElevatorStateFromElevator:
+			
+		}
+	}
+	go func(){
+		for _,orders := range currentElevatorState.InternalOrders{
+			log.Println("Sending internal orders")
+			log.Println(orders)
+			SendOrderToElevator<-orders
+		}
+	}()
+
+}
+
+
 
 
 
@@ -43,7 +81,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	ElevatorStateFromElevator <-chan utilities.State,
 	Id string) {
 	
-
 
 	var currentPeers []string
 
@@ -57,6 +94,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		}
 		localId = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
+	log.Println("Local Id : ", localId)
 
 
 	orderMap 				:= make(map[int]driver.OrderEvent)
@@ -99,42 +137,15 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	go bcast.Transmitter(30205, sendAckToPeers)
 	go bcast.Receiver(30205, recvAckFromPeers)
 
-	log.Println("Local Id : ", localId)
 
-	/*
-	c := make(chan bool)
 
-	go func() {
-		timeout := time.After(2*time.Second)
-		loop:
-
-		for{
-			select{
-				case state:= <-recvStateFromPeers:
-					log.Println("recived states")
-					log.Println(state)
-					if state.Id == localId{ 
-						log.Println("Internal orders recieved from : ", state.StateSentFromId)
-						log.Println(state)
-						for _,internalOrder := range state.InternalOrders{
-							log.Println("InternalOrder")
-							log.Println(internalOrder)
-							SendOrderToElevator<-internalOrder
-							currentElevatorState.InternalOrders=append(currentElevatorState.InternalOrders, internalOrder)
-							internalOrderMap[internalOrder.Checksum]=internalOrder
-						}
-					}
-				case <-timeout:
-					log.Println("First init of elevator")
-					break loop
-
-			}
-		}
-		c<-true
-	}()
 	
-	<-c
-*/
+	Init(recvStateFromPeers,
+		ElevatorStateFromElevator,
+		SendOrderToElevator,
+		internalOrderMap)
+
+
 
 	for {
 
@@ -153,22 +164,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			
 
 		case state:= <-recvStateFromPeers:
-				if state.Id == localId && state.StateSentFromId != localId{ 
-					log.Println("Internal orders recieved from : ", state.StateSentFromId)
-					log.Println(state)
-					for _,internalOrder := range state.InternalOrders{
-						log.Println(internalOrder)
-						SendOrderToElevator<-internalOrder
-						currentElevatorState.InternalOrders=append(currentElevatorState.InternalOrders, internalOrder)
-						internalOrderMap[internalOrder.Checksum]=internalOrder
-
-					} 
-				}else{
-					stateMap[state.Id]=state
-					if state.Id != localId{
-						log.Println(state)
-					}
-				}
+			stateMap[state.Id]=state
+				
 				
 				
 
@@ -181,7 +178,6 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			currentPeers = p.Peers
 			
 			if state, ok := stateMap[p.New]; ok {//&& state.StateSentFromId != localId{ 
-				log.Println("Reconnecting elevator, sending internal Orders")
 				state.StateSentFromId = localId
 				log.Println("Sending state to reconnecting elevator")
 				log.Println(state)
