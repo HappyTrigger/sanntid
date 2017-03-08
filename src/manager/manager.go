@@ -170,13 +170,14 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			state.Id,state.StateSentFromId = localId,localId
 			stateMap[localId]=state
 			currentElevatorState = state
-			sendStateToPeers<-state
+			
 
 
 		case orderComplete:=<- recOrderCompleteFromPeers:
 			log.Println("Order at Floor:",orderComplete.Floor," completed")
 			delete(orderAssignedToMap,orderComplete.Checksum)
 			delete(orderMap,orderComplete.Checksum)
+			delete (orderRecievedAtTime, orderComplete.Checksum)
 			driver.Elev_set_button_lamp(orderComplete.Button, orderComplete.Floor, false)
 
 
@@ -185,13 +186,14 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				case driver.Internal:
 					log.Println("Internal Order complete")
 					delete(internalOrderMap,orderComplete.Checksum)
-					//could use a map here, iterate over it and send the internalOrder list to the other elevators
+
+					sendNewStateToPeers(sendStateToPeers,internalOrderMap)
 
 				default: 
 					sendOrderCompleteToPeers<-orderComplete
 					delete(orderAssignedToMap,orderComplete.Checksum)
 					delete(orderMap,orderComplete.Checksum)
-					delete (orderRecievedAtTime, orderComplete.Checksum)
+					delete (orderRecievedAtTime,orderComplete.Checksum)
 			}
 
 
@@ -204,10 +206,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 				case driver.Internal:
 					SendOrderToElevator<-event
 					internalOrderMap[event.Checksum]=event
-					for _,order := range internalOrderMap{
-						currentElevatorState.InternalOrders = append(currentElevatorState.InternalOrders, order)
-					}
-					sendStateToPeers<-currentElevatorState
+					sendNewStateToPeers(sendStateToPeers,internalOrderMap) 
 
 				default: 
 					sendOrderToPeers<-event
@@ -280,6 +279,20 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 
 
+
+func sendNewStateToPeers(stateToPeers chan<- utilities.State,
+	internalOrders map[int]driver.OrderEvent) {
+	
+	var internalOrderSlice []driver.OrderEvent
+	
+	for _,order := range internalOrders{
+		internalOrderSlice = append(internalOrderSlice, order)
+	}
+	
+	currentElevatorState.InternalOrders = internalOrderSlice
+	
+	stateToPeers<-currentElevatorState
+}
 
 //Might have to change some of the values
 //This functions as it should. Can see if we want to rewrite it
