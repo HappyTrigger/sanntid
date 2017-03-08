@@ -168,9 +168,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 		case state:= <-recvStateFromPeers:
 			stateMap[state.Id]=state
-			if state.Id == localId{
-				log.Println(state)
-			}
+
 				
 				
 				
