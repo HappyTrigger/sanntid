@@ -259,21 +259,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Println("-------------------------------")
 			peerTxEnable <- false
 
-			terminateTimer := time.After(10*time.Second)
-
-			Loop:
-			for{
-				select{
-					case state:=<-ElevatorStateFromElevator:	
-						currentElevatorState=state
-						peerTxEnable <- true
-						break Loop
-
-					case <-terminateTimer:
-						panic("Major malfunction, call technical assistance")
-				}
-
-			}
+	
+			driver.Elev_set_motor_direction(driver.MotorStop)
+			panic("Major malfunction, call technical assistance")
+		
 
 			//Should start some re-initalize of the elevator here.
 
