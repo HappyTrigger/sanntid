@@ -24,6 +24,7 @@ const (
 	OrderResendInterval       = 50 * time.Millisecond
 	StateResendInterval       = 100 * time.Millisecond
 	orderNotCompletedInterval = 2 * time.Second
+	DoorOpenTime			  = 3 * time.Second
 )
 
 var localId string
@@ -50,18 +51,20 @@ loop:
 					internalOrderSlice = append(internalOrderSlice, internalOrder)
 					internalOrderMap[internalOrder.Checksum] = internalOrder
 				}
+				break loop
 			}
 		case <-timeout:
-			log.Println("First init of elevator")
+			log.Println("Did not recieve any internal orders")
 			break loop
-		case state := <-ElevatorStateFromElevator:
-			currentElevatorState = state
 
 		}
 	}
 	go func() {
 		for _, orders := range internalOrderSlice {
 			SendOrderToElevator <- orders
+			currentElevatorState.InternalOrders = append(currentElevatorState.InternalOrders,orders)
+
+
 		}
 	}()
 	sendNewStateToPeers(sendStateToPeers, internalOrderMap)
@@ -127,7 +130,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	go bcast.Transmitter(30205, sendAckToPeers)
 	go bcast.Receiver(30205, recvAckFromPeers)
 
-	Init(recvStateFromPeers,
+	go Init(recvStateFromPeers,
 		sendStateToPeers,
 		ElevatorStateFromElevator,
 		SendOrderToElevator,
@@ -253,6 +256,22 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Println("ElevatorEmergency is now active")
 			log.Println("-------------------------------")
 			peerTxEnable <- false
+
+			terminateTimer := time.After(10*time.Second)
+
+			Loop:
+			for{
+				select{
+					case state:=<-ElevatorStateFromElevator:	
+						currentElevatorState=state
+						peerTxEnable <- true
+						break Loop
+
+					case <-terminateTimer:
+						panic("Major malfunction, call technical assistance")
+				}
+
+			}
 
 			//Should start some re-initalize of the elevator here.
 
@@ -392,12 +411,12 @@ func NewOrderDelegator(stateMap map[string]utilities.State,
 	var currentId string
 	fitnessMap := make(map[string]float64)
 
-	for elevator, state := range stateMap {
+	for elevatorId, state := range stateMap {
 		for _, peer := range currentPeers {
-			if elevator == peer {
+			if elevatorId == peer {
 				fitnessMap[peer] += increaseFitnessPerOrder(peer, orderAssignedToMap)
 
-				fitnessMap[peer] += float64(math.Abs(orderEvent.Floor-state.LastPassedFloor) * driver.TRAVELTIME_BETWEEN_FLOORS)
+				fitnessMap[peer] += float64(math.Abs(float64(orderEvent.Floor)-float64(state.LastPassedFloor)) * float64(driver.TRAVELTIME_BETWEEN_FLOORS))
 			}
 		}
 	}
@@ -432,9 +451,9 @@ func increaseFitnessPerOrder(peer string,
 	orderAssignedToElevator map[int]string) float64 {
 	var fitness float64
 
-	for _, elevator := range orderAssignedToElevator {
-		if elevator == peer {
-			fitness += float64(elevator.DoorOpenTime)
+	for _, elevatorId := range orderAssignedToElevator {
+		if elevatorId == peer {
+			fitness += float64(DoorOpenTime)
 		}
 	}
 
