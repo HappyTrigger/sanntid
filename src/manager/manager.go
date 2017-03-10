@@ -53,6 +53,8 @@ loop:
 				}
 				break loop
 			}
+		case state:=<-ElevatorStateFromElevator:
+			currentElevatorState=state
 		case <-timeout:
 			log.Println("Did not recieve any internal orders")
 			break loop
@@ -130,7 +132,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 	go bcast.Transmitter(30205, sendAckToPeers)
 	go bcast.Receiver(30205, recvAckFromPeers)
 
-	go Init(recvStateFromPeers,
+	Init(recvStateFromPeers,
 		sendStateToPeers,
 		ElevatorStateFromElevator,
 		SendOrderToElevator,
