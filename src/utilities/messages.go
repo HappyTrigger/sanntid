@@ -1,7 +1,8 @@
 package utilities
 
 import (
-	"../driver"
+	//"../driver"
+	"../dummydriver"
 )
 
 type Achnowledgement struct {
@@ -10,14 +11,12 @@ type Achnowledgement struct {
 }
 
 type State struct {
-	Id              string
-	LastPassedFloor int
-	Direction       driver.ButtonType
-	DoorState       bool
-	BetweenFloors   bool
-	InternalOrders  []driver.OrderEvent
-	StateSentFromId string
+	Id              	string
+	LastRegisterdFloor 	int
+	Direction       	driver.ButtonType
+	DoorState       	bool
+	Idle		    	bool
+	InternalOrders  	[]driver.OrderEvent
+	StateSentFromId		string
 }
 
-// Between floors can probably be rewritten to Elevator-Status or something like that
-//Where it is active when serving any kind or order, and Idle when not doing anything.
