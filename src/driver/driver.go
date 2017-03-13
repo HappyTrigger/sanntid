@@ -17,6 +17,20 @@ const (
     TRAVELTIME_BETWEEN_FLOORS = 2.7 //Seconds
 )
 
+var lamp_channel_matrix = [N_FLOORS][N_BUTTONS]int{
+        [N_BUTTONS]int{LIGHT_UP1, LIGHT_DOWN1, LIGHT_COMMAND1},
+        [N_BUTTONS]int{LIGHT_UP2, LIGHT_DOWN2, LIGHT_COMMAND2},
+        [N_BUTTONS]int{LIGHT_UP3, LIGHT_DOWN3, LIGHT_COMMAND3},
+        [N_BUTTONS]int{LIGHT_UP4, LIGHT_DOWN4, LIGHT_COMMAND4},
+}
+
+var button_channel_matrix = [N_FLOORS][N_BUTTONS]int{
+        [N_BUTTONS]int{BUTTON_UP1, BUTTON_DOWN1, BUTTON_COMMAND1},
+        [N_BUTTONS]int{BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
+        [N_BUTTONS]int{BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
+        [N_BUTTONS]int{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
+}
+
 func pollFloorSensor(sensorEventChan chan<- int) {
     state := -1
 
@@ -120,13 +134,6 @@ func Elev_set_motor_direction(Direction MotorDirection) {
 
 func Elev_set_button_lamp(button ButtonType, floor int, value bool) {
 
-    var lamp_channel_matrix = [N_FLOORS][N_BUTTONS]int{
-        [N_BUTTONS]int{LIGHT_UP1, LIGHT_DOWN1, LIGHT_COMMAND1},
-        [N_BUTTONS]int{LIGHT_UP2, LIGHT_DOWN2, LIGHT_COMMAND2},
-        [N_BUTTONS]int{LIGHT_UP3, LIGHT_DOWN3, LIGHT_COMMAND3},
-        [N_BUTTONS]int{LIGHT_UP4, LIGHT_DOWN4, LIGHT_COMMAND4},
-    }
-
     if floor >= 0 && floor < N_FLOORS {
         if button >= 0 && button < N_BUTTONS {
             switch button {
@@ -187,13 +194,6 @@ func Elev_set_stop_lamp(lightOn bool) {
 }
 
 func elev_get_button_signal(button ButtonType, floor int) bool {
-
-    var button_channel_matrix = [N_FLOORS][N_BUTTONS]int{
-        [N_BUTTONS]int{BUTTON_UP1, BUTTON_DOWN1, BUTTON_COMMAND1},
-        [N_BUTTONS]int{BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
-        [N_BUTTONS]int{BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
-        [N_BUTTONS]int{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
-    }
 
     if floor >= 0 && floor < N_FLOORS {
         if button >= 0 && button < N_BUTTONS {
