@@ -2,7 +2,6 @@ package utilities
 
 import (
 	"../driver"
-	//"../dummydriver"
 )
 
 type Achnowledgement struct {

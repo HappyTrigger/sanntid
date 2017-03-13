@@ -10,7 +10,6 @@ import (
 	"log"
 	"time"
 
-	//"../dummydriver"
 	"../driver"
 	"../utilities"
 )
@@ -37,8 +36,7 @@ func Run(
 	elevatorState.DoorState = false
 	elevatorState.Idle = true
 	elevatorState.Direction = driver.Down
-	elevatorState.LastRegisterdFloor = driver.Elev_get_floor_sensor_signal()
-
+	elevatorState.LastRegisterdFloor = <-SensorEvent
 	ElevatorStateToManager <- elevatorState
 
 	if elevatorState.LastRegisterdFloor == -1 {
@@ -213,13 +211,10 @@ func elevatorControl(
 		if orderOnNextFloors {
 			if elevatorState.Direction == driver.Up {
 				driver.Elev_set_motor_direction(driver.MotorUp)
-				log.Println("Driving up")
 			} else {
 				driver.Elev_set_motor_direction(driver.MotorDown)
-				log.Println("Driving Down")
 			}
 			elevatorState.Idle = false
-
 		} else {
 			elevatorState.Idle = true
 

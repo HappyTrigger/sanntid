@@ -3,6 +3,8 @@ package bcast
 import (
 	"encoding/json"
 	"fmt"
+	//"log"
+	//"math/rand"
 	"net"
 	"reflect"
 	"strings"
@@ -14,6 +16,8 @@ import (
 // it on `port`
 func Transmitter(port int, chans ...interface{}) {
 	checkArgs(chans...)
+
+	var packetloss int
 
 	n := 0
 	for range chans {
@@ -35,7 +39,14 @@ func Transmitter(port int, chans ...interface{}) {
 	for {
 		chosen, value, _ := reflect.Select(selectCases)
 		buf, _ := json.Marshal(value.Interface())
-		conn.WriteTo([]byte(typeNames[chosen]+string(buf)), addr)
+		packetloss = rand.Intn(10)
+
+		//REMOVE THIS
+		if packetloss > 8 {
+			log.Println("Sending messages")
+
+			conn.WriteTo([]byte(typeNames[chosen]+string(buf)), addr)
+		}
 	}
 }
 

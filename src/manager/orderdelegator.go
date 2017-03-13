@@ -1,10 +1,28 @@
 package manager
 
-/*
+import (
+	"log"
+	"math"
+
+	"../driver"
+	"../utilities"
+)
+
+func increaseFitnessPerOrder(peer string,
+	orderAssignedToElevator map[int]string) float64 {
+	var fitness float64
+
+	for _, elevatorId := range orderAssignedToElevator {
+		if elevatorId == peer {
+			fitness += float64(doorOpenTime)
+		}
+	}
+
+	return fitness
+}
 
 func orderDelegator(StateMap map[string]utilities.State,
 	OrderEvent driver.OrderEvent, currentPeers []string, orderAssignedToMap map[int]string) bool {
-
 
 	fitnessMap := make(map[string]float64)
 
@@ -12,12 +30,9 @@ func orderDelegator(StateMap map[string]utilities.State,
 		for _, peer := range currentPeers {
 			if elevator == peer {
 				if state.Idle {
-					fitnessMap[elevator] = math.Abs(float64(state.LastRegisterdFloor - OrderEvent.Floor))
+					fitnessMap[elevator] = math.Abs(float64(state.LastRegisterdFloor-OrderEvent.Floor)) * driver.TRAVELTIME_BETWEEN_FLOORS
 				} else {
-
-
 					floorDifference := float64(OrderEvent.Floor - state.LastRegisterdFloor)
-					fitnessMap[elevator] +=  increaseFitnessPerOrder(peer,orderAssignedToMap)
 					switch OrderEvent.Button {
 					case driver.Up:
 						if state.Direction == driver.Up {
@@ -29,7 +44,7 @@ func orderDelegator(StateMap map[string]utilities.State,
 							}
 
 						} else {
-							    //Order Up bellow, and eleavtor moving down
+							//Order Up bellow, and eleavtor moving down
 							if floorDifference <= 0 {
 								fitnessMap[elevator] += float64(state.LastRegisterdFloor*2) - math.Abs(float64(floorDifference))
 							} else {
@@ -48,7 +63,7 @@ func orderDelegator(StateMap map[string]utilities.State,
 								fitnessMap[elevator] += float64(math.Abs(float64(floorDifference)) + float64(state.LastRegisterdFloor*2))
 							}
 						} else {
-							    //Order downwards above and elevator moving up
+							//Order downwards above and elevator moving up
 							if floorDifference >= 0 {
 								fitnessMap[elevator] += float64((driver.N_FLOORS-state.LastRegisterdFloor)*2) - float64(floorDifference)
 							} else {
@@ -57,12 +72,14 @@ func orderDelegator(StateMap map[string]utilities.State,
 							}
 						}
 					}
+					fitnessMap[elevator] = fitnessMap[elevator] * driver.TRAVELTIME_BETWEEN_FLOORS
+					fitnessMap[elevator] += increaseFitnessPerOrder(peer, orderAssignedToMap)
 				}
 			}
 		}
 	}
 	var minFitness float64
-	minFitness = 20
+	minFitness = 100
 	var currentId string
 	for elevatorId, fitness := range fitnessMap {
 		if fitness == minFitness {
@@ -77,25 +94,10 @@ func orderDelegator(StateMap map[string]utilities.State,
 	}
 
 	orderAssignedToMap[OrderEvent.Checksum] = currentId
-
+	log.Println("Order delegated to: ", currentId)
 	if currentId == localId {
 		return true
 	} else {
 		return false
 	}
 }
-
-
-func increaseFitnessPerOrder(peer string,
-	orderAssignedToElevator map[int]string) float64 {
-	var fitness float64
-
-	for _, elevatorId := range orderAssignedToElevator {
-		if elevatorId == peer {
-			fitness += float64(doorOpenTime)
-		}
-	}
-
-	return fitness
-}
-*/
