@@ -1,8 +1,8 @@
 package utilities
 
 import (
-	//"../driver"
-	"../dummydriver"
+	"../driver"
+	//"../dummydriver"
 )
 
 type Achnowledgement struct {
@@ -11,12 +11,11 @@ type Achnowledgement struct {
 }
 
 type State struct {
-	Id              	string
-	LastRegisterdFloor 	int
-	Direction       	driver.ButtonType
-	DoorState       	bool
-	Idle		    	bool
-	InternalOrders  	[]driver.OrderEvent
-	StateSentFromId		string
+	Id                 string
+	LastRegisterdFloor int
+	Direction          driver.ButtonType
+	DoorState          bool
+	Idle               bool
+	InternalOrders     []driver.OrderEvent
+	StateSentFromId    string
 }
-

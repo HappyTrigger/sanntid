@@ -13,8 +13,8 @@ import (
 	"os"
 	"time"
 
-	"../dummydriver"
-//	"../driver"
+	//	"../dummydriver"
+	"../driver"
 	"../network/bcast"
 	"../network/localip"
 	"../network/peers"
@@ -25,13 +25,12 @@ const (
 	orderResendInterval       = 50 * time.Millisecond
 	stateResendInterval       = 100 * time.Millisecond
 	orderNotCompletedInterval = 2 * time.Second
-	doorOpenTime			  = 3 * time.Second
-	travelTimeBetweenFloors	  = 3 * time.Second
+	travelTimeBetweenFloors   = 3 * time.Second
+	doorOpenTime              = 3
 )
 
 var localId string
 var currentElevatorState utilities.State
-
 
 func Init(reciveStateFromPeers <-chan utilities.State,
 	SendStateToPeers chan<- utilities.State,
@@ -42,7 +41,7 @@ func Init(reciveStateFromPeers <-chan utilities.State,
 	var internalOrderSlice []driver.OrderEvent
 	timeout := time.After(200 * time.Millisecond)
 
-	loop:
+loop:
 	for {
 		select {
 		case state := <-reciveStateFromPeers:
@@ -52,8 +51,8 @@ func Init(reciveStateFromPeers <-chan utilities.State,
 					InternalOrderMap[internalOrder.Checksum] = internalOrder
 				}
 			}
-		case state:=<-ElevatorStateFromElevator:
-			currentElevatorState=state
+		case state := <-ElevatorStateFromElevator:
+			currentElevatorState = state
 		case <-timeout:
 			log.Println("Did not receive any internal orders")
 			break loop
@@ -63,7 +62,7 @@ func Init(reciveStateFromPeers <-chan utilities.State,
 	go func() {
 		for _, orders := range internalOrderSlice {
 			SendOrderToElevator <- orders
-			currentElevatorState.InternalOrders = append(currentElevatorState.InternalOrders,orders)
+			currentElevatorState.InternalOrders = append(currentElevatorState.InternalOrders, orders)
 		}
 	}()
 	sendNewStateToPeers(SendStateToPeers, InternalOrderMap)
@@ -141,10 +140,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 		case msg := <-reciveOrderFromPeers:
 			sendAckToPeers <- utilities.Achnowledgement{Id: localId, Checksum: msg.Checksum}
-			if _, orderExist := externalOrderMap[msg.Checksum]; !orderExist { 
+			if _, orderExist := externalOrderMap[msg.Checksum]; !orderExist {
 				orderRecievedAtTime[msg.Checksum] = time.Now()
 				externalOrderMap[msg.Checksum] = msg
-				driver.Elev_set_button_lamp(msg.Button, msg.Floor, true) 
+				driver.Elev_set_button_lamp(msg.Button, msg.Floor, true)
 				if ok := orderDelegator(stateMap, msg, currentPeers, orderAssignedToMap); ok {
 					SendOrderToElevator <- msg
 				}
@@ -161,7 +160,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 
 			currentPeers = p.Peers
 
-			if state, ok := stateMap[p.New]; ok { 
+			if state, ok := stateMap[p.New]; ok {
 				state.StateSentFromId = localId
 				log.Println("Sending state to reconnecting elevator")
 				log.Println(state)
@@ -255,10 +254,8 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			log.Println("-------------------------------")
 			peerTxEnable <- false
 
-	
 			driver.Elev_set_motor_direction(driver.MotorStop)
 			panic("Major malfunction, call technical assistance")
-		
 
 		case <-orderResend:
 			for _, v := range unconfirmedOrderMap {
@@ -294,12 +291,9 @@ func sendNewStateToPeers(stateToPeers chan<- utilities.State,
 	stateToPeers <- currentElevatorState
 }
 
-
-
 func orderDelegator(StateMap map[string]utilities.State,
 	OrderEvent driver.OrderEvent, currentPeers []string, orderAssignedToMap map[int]string) bool {
 
-	
 	fitnessMap := make(map[string]float64)
 
 	for elevator, state := range StateMap {
@@ -309,9 +303,8 @@ func orderDelegator(StateMap map[string]utilities.State,
 					fitnessMap[elevator] = math.Abs(float64(state.LastRegisterdFloor - OrderEvent.Floor))
 				} else {
 
-					
 					floorDifference := float64(OrderEvent.Floor - state.LastRegisterdFloor)
-					fitnessMap[elevator] +=  increaseFitnessPerOrder(peer,orderAssignedToMap)
+					fitnessMap[elevator] += increaseFitnessPerOrder(peer, orderAssignedToMap)
 					switch OrderEvent.Button {
 					case driver.Up:
 						if state.Direction == driver.Up {
@@ -323,7 +316,7 @@ func orderDelegator(StateMap map[string]utilities.State,
 							}
 
 						} else {
-							    //Order Up bellow, and eleavtor moving down
+							//Order Up bellow, and eleavtor moving down
 							if floorDifference <= 0 {
 								fitnessMap[elevator] += float64(state.LastRegisterdFloor*2) - math.Abs(float64(floorDifference))
 							} else {
@@ -342,7 +335,7 @@ func orderDelegator(StateMap map[string]utilities.State,
 								fitnessMap[elevator] += float64(math.Abs(float64(floorDifference)) + float64(state.LastRegisterdFloor*2))
 							}
 						} else {
-							    //Order downwards above and elevator moving up
+							//Order downwards above and elevator moving up
 							if floorDifference >= 0 {
 								fitnessMap[elevator] += float64((driver.N_FLOORS-state.LastRegisterdFloor)*2) - float64(floorDifference)
 							} else {
@@ -356,7 +349,7 @@ func orderDelegator(StateMap map[string]utilities.State,
 		}
 	}
 	var minFitness float64
-	minFitness = 20
+	minFitness = 100
 	var currentId string
 	for elevatorId, fitness := range fitnessMap {
 		if fitness == minFitness {
@@ -372,13 +365,14 @@ func orderDelegator(StateMap map[string]utilities.State,
 
 	orderAssignedToMap[OrderEvent.Checksum] = currentId
 
+	log.Println("Fitness ", minFitness)
+	log.Println("Order delegated to: ", currentId)
 	if currentId == localId {
 		return true
 	} else {
 		return false
 	}
 }
-
 
 func increaseFitnessPerOrder(peer string,
 	orderAssignedToElevator map[int]string) float64 {

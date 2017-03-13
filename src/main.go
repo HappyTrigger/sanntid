@@ -9,8 +9,8 @@ import (
 	"os"
 	"os/signal"
 
-//	"./driver"
-	"./dummydriver"
+	"./driver"
+	//	"./dummydriver"
 	"./elevator"
 	"./manager"
 	"./utilities"

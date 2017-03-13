@@ -9,9 +9,9 @@ It also sends state-updates to the manager when a state-change has been register
 import (
 	"log"
 	"time"
-	
-	"../dummydriver"
-	//"../driver"
+
+	//"../dummydriver"
+	"../driver"
 	"../utilities"
 )
 
@@ -39,7 +39,7 @@ func Run(
 	elevatorState.Direction = driver.Down
 	elevatorState.LastRegisterdFloor = driver.Elev_get_floor_sensor_signal()
 
-	ElevatorStateToManager <- elevatorState 
+	ElevatorStateToManager <- elevatorState
 
 	if elevatorState.LastRegisterdFloor == -1 {
 		log.Fatal("[FATAL]\tElevator initialized between floors")
@@ -50,15 +50,14 @@ func Run(
 
 		case order := <-NewOrder:
 			orders[order.Checksum] = order
-			log.Println("Order delegated to this elevator")
 			driver.Elev_set_button_lamp(order.Button, order.Floor, true)
 
 			if elevatorState.Idle {
-				
-				elevatorControl(&doorClose,orders,OrderComplete)
-				
+
+				elevatorControl(&doorClose, orders, OrderComplete)
+
 				ElevatorStateToManager <- elevatorState
-				
+
 				if !elevatorEmergencyTimer.Stop() {
 					<-elevatorEmergencyTimer.C
 				}
@@ -66,12 +65,12 @@ func Run(
 			}
 
 		case elevatorState.LastRegisterdFloor = <-SensorEvent:
-			
+
 			driver.Elev_set_floor_indicator(elevatorState.LastRegisterdFloor)
-			
+
 			if elevatorState.LastRegisterdFloor != -1 {
 				log.Println("On Floor ", elevatorState.LastRegisterdFloor)
-				elevatorControl(&doorClose,orders,OrderComplete)
+				elevatorControl(&doorClose, orders, OrderComplete)
 
 				ElevatorStateToManager <- elevatorState
 				if !elevatorEmergencyTimer.Stop() {
@@ -83,7 +82,7 @@ func Run(
 		case <-doorClose:
 			driver.Elev_set_door_open_lamp(false)
 			elevatorState.DoorState = false
-			elevatorControl(&doorClose,orders,OrderComplete)
+			elevatorControl(&doorClose, orders, OrderComplete)
 
 			ElevatorStateToManager <- elevatorState
 			if !elevatorEmergencyTimer.Stop() {
@@ -113,26 +112,26 @@ func findNextDestination(Orders map[int]driver.OrderEvent,
 	OrderComplete chan<- driver.OrderEvent) (bool, bool) {
 
 	orderOnNextFloors := false
-	orderOnFloor 	  := false
+	orderOnFloor := false
 
 	for checksum, order := range Orders {
 		if order.Button == elevatorState.Direction || order.Button == driver.Internal {
 			if elevatorState.LastRegisterdFloor == order.Floor {
-				orderOnFloor = true 
+				orderOnFloor = true
 				driver.Elev_set_button_lamp(order.Button, order.Floor, false)
-				
+
 				OrderComplete <- order
 				delete(Orders, checksum)
 			}
 			if elevatorState.Direction == driver.Up {
 				if order.Floor > elevatorState.LastRegisterdFloor {
 					orderOnNextFloors = true
-				
+
 				}
 			} else {
 				if order.Floor < elevatorState.LastRegisterdFloor {
 					orderOnNextFloors = true
-					
+
 				}
 			}
 		} else {
@@ -152,7 +151,7 @@ func findNextDestination(Orders map[int]driver.OrderEvent,
 		}
 	}
 
-	if !orderOnFloor  && !orderOnNextFloors {
+	if !orderOnFloor && !orderOnNextFloors {
 		if elevatorState.Direction == driver.Up {
 			elevatorState.Direction = driver.Down
 		} else {
@@ -165,17 +164,17 @@ func findNextDestination(Orders map[int]driver.OrderEvent,
 					driver.Elev_set_button_lamp(order.Button, order.Floor, false)
 					OrderComplete <- order
 					delete(Orders, checksum)
-					
+
 				}
 				if elevatorState.Direction == driver.Up {
 					if order.Floor > elevatorState.LastRegisterdFloor {
 						orderOnNextFloors = true
-					
+
 					}
 				} else {
 					if order.Floor < elevatorState.LastRegisterdFloor {
 						orderOnNextFloors = true
-					
+
 					}
 				}
 			} else {
@@ -205,11 +204,11 @@ func elevatorControl(
 
 	orderOnFloor, orderOnNextFloors := findNextDestination(Orders, OrderComplete)
 
-	if orderOnFloor{
+	if orderOnFloor {
 		driver.Elev_set_motor_direction(driver.MotorStop)
 		driver.Elev_set_door_open_lamp(true)
 		*doorClose = time.After(doorOpenTime)
-		elevatorState.DoorState = true 
+		elevatorState.DoorState = true
 	} else {
 		if orderOnNextFloors {
 			if elevatorState.Direction == driver.Up {
@@ -227,4 +226,3 @@ func elevatorControl(
 		}
 	}
 }
-
