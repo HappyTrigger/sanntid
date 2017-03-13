@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	N_FLOORS                  = 4
-	N_BUTTONS                 = 3
-	InvalidFloor              = -1
-	MOTOR_SPEED               = 2800
-	pollInterval              = 1 * time.Millisecond
-	TRAVELTIME_BETWEEN_FLOORS = 2.7 //Seconds
+	N_FLOORS                = 4
+	N_BUTTONS               = 3
+	invalidFloor            = -1
+	motorSpeed              = 2800
+	pollInterval            = 1 * time.Millisecond
+	TravelTimeBetweenFloors = 2.7
 )
 
 var lamp_channel_matrix = [N_FLOORS][N_BUTTONS]int{
@@ -31,7 +31,7 @@ var button_channel_matrix = [N_FLOORS][N_BUTTONS]int{
 	{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
 }
 
-func pollFloorSensor(sensorEventChan chan<- int) {
+func elev_poll_floor_sensor(sensorEventChan chan<- int) {
 	state := -1
 
 	for {
@@ -44,7 +44,7 @@ func pollFloorSensor(sensorEventChan chan<- int) {
 	}
 }
 
-func pollButtons(order chan<- OrderEvent) {
+func elev_poll_buttons(order chan<- OrderEvent) {
 
 	var isPressed [N_BUTTONS][N_FLOORS]bool
 
@@ -63,7 +63,7 @@ func pollButtons(order chan<- OrderEvent) {
 	}
 }
 
-func pollStopButton(stopButtonChan chan<- bool) {
+func elev_poll_stop_button(stopButtonChan chan<- bool) {
 	isPressed := elev_get_stop_signal()
 
 	for {
@@ -79,9 +79,9 @@ func pollStopButton(stopButtonChan chan<- bool) {
 }
 
 func Init(OrderEvent chan<- OrderEvent, sensorEventChan chan<- int, stopButtonChan chan<- bool) {
-	go pollFloorSensor(sensorEventChan)
-	go pollButtons(OrderEvent)
-	go pollStopButton(stopButtonChan)
+	go elev_poll_floor_sensor(sensorEventChan)
+	go elev_poll_buttons(OrderEvent)
+	go elev_poll_stop_button(stopButtonChan)
 }
 
 func init() {
@@ -103,7 +103,7 @@ func init() {
 
 	timeout := time.After(10 * time.Second)
 
-	for elev_get_floor_sensor_signal() == InvalidFloor {
+	for elev_get_floor_sensor_signal() == invalidFloor {
 		select {
 		case <-timeout:
 			log.Fatal("Timeout in driver. Did not get to valid floor in time.")
@@ -123,10 +123,10 @@ func Elev_set_motor_direction(Direction MotorDirection) {
 
 	case MotorUp:
 		io.ClearBit(MOTORDIR)
-		io.WriteAnalog(MOTOR, MOTOR_SPEED)
+		io.WriteAnalog(MOTOR, motorSpeed)
 	case MotorDown:
 		io.SetBit(MOTORDIR)
-		io.WriteAnalog(MOTOR, MOTOR_SPEED)
+		io.WriteAnalog(MOTOR, motorSpeed)
 	case MotorStop:
 		io.WriteAnalog(MOTOR, 0)
 	}

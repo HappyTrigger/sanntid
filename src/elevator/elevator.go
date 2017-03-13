@@ -1,11 +1,5 @@
 package elevator
 
-/*
-The elevator-module is responsible for everything regarding the elevator control and exectution.
-It controls lighting, motorfunctioality, and keeps track of the current elevator-state.
-It also sends state-updates to the manager when a state-change has been registerd.
-
-*/
 import (
 	"log"
 	"time"
@@ -53,7 +47,6 @@ func Run(
 			if elevatorState.Idle {
 
 				elevatorControl(&doorClose, orders, OrderComplete)
-
 				ElevatorStateToManager <- elevatorState
 
 				if !elevatorEmergencyTimer.Stop() {
@@ -67,7 +60,7 @@ func Run(
 			driver.Elev_set_floor_indicator(elevatorState.LastRegisterdFloor)
 
 			if elevatorState.LastRegisterdFloor != -1 {
-				log.Println("On Floor ", elevatorState.LastRegisterdFloor)
+				log.Println("On Floor ", elevatorState.LastRegisterdFloor+1)
 				elevatorControl(&doorClose, orders, OrderComplete)
 
 				ElevatorStateToManager <- elevatorState
@@ -106,95 +99,6 @@ func Run(
 	}
 }
 
-func findNextDestination(Orders map[int]driver.OrderEvent,
-	OrderComplete chan<- driver.OrderEvent) (bool, bool) {
-
-	orderOnNextFloors := false
-	orderOnFloor := false
-
-	for checksum, order := range Orders {
-		if order.Button == elevatorState.Direction || order.Button == driver.Internal {
-			if elevatorState.LastRegisterdFloor == order.Floor {
-				orderOnFloor = true
-				driver.Elev_set_button_lamp(order.Button, order.Floor, false)
-
-				OrderComplete <- order
-				delete(Orders, checksum)
-			}
-			if elevatorState.Direction == driver.Up {
-				if order.Floor > elevatorState.LastRegisterdFloor {
-					orderOnNextFloors = true
-
-				}
-			} else {
-				if order.Floor < elevatorState.LastRegisterdFloor {
-					orderOnNextFloors = true
-
-				}
-			}
-		} else {
-
-			switch elevatorState.Direction {
-			case driver.Up:
-				if order.Floor > elevatorState.LastRegisterdFloor {
-					orderOnNextFloors = true
-				}
-
-			case driver.Down:
-				if order.Floor < elevatorState.LastRegisterdFloor {
-					orderOnNextFloors = true
-
-				}
-			}
-		}
-	}
-
-	if !orderOnFloor && !orderOnNextFloors {
-		if elevatorState.Direction == driver.Up {
-			elevatorState.Direction = driver.Down
-		} else {
-			elevatorState.Direction = driver.Up
-		}
-		for checksum, order := range Orders {
-			if order.Button == elevatorState.Direction || order.Button == driver.Internal {
-				if elevatorState.LastRegisterdFloor == order.Floor {
-					orderOnFloor = true
-					driver.Elev_set_button_lamp(order.Button, order.Floor, false)
-					OrderComplete <- order
-					delete(Orders, checksum)
-
-				}
-				if elevatorState.Direction == driver.Up {
-					if order.Floor > elevatorState.LastRegisterdFloor {
-						orderOnNextFloors = true
-
-					}
-				} else {
-					if order.Floor < elevatorState.LastRegisterdFloor {
-						orderOnNextFloors = true
-
-					}
-				}
-			} else {
-
-				switch elevatorState.Direction {
-				case driver.Up:
-					if order.Floor > elevatorState.LastRegisterdFloor {
-						orderOnNextFloors = true
-					}
-
-				case driver.Down:
-					if order.Floor < elevatorState.LastRegisterdFloor {
-						orderOnNextFloors = true
-
-					}
-				}
-			}
-		}
-	}
-	return orderOnFloor, orderOnNextFloors
-}
-
 func elevatorControl(
 	doorClose *<-chan time.Time,
 	Orders map[int]driver.OrderEvent,
@@ -220,4 +124,58 @@ func elevatorControl(
 
 		}
 	}
+}
+
+func findNextDestination(Orders map[int]driver.OrderEvent,
+	OrderComplete chan<- driver.OrderEvent) (bool, bool) {
+
+	orderOnNextFloors := false
+	orderOnFloor := false
+
+	for i := 0; i < 2; i++ {
+		for checksum, order := range Orders {
+			if order.Button == elevatorState.Direction || order.Button == driver.Internal {
+				if elevatorState.LastRegisterdFloor == order.Floor {
+					orderOnFloor = true
+					driver.Elev_set_button_lamp(order.Button, order.Floor, false)
+
+					OrderComplete <- order
+					delete(Orders, checksum)
+				}
+				if elevatorState.Direction == driver.Up {
+					if order.Floor > elevatorState.LastRegisterdFloor {
+						orderOnNextFloors = true
+
+					}
+				} else {
+					if order.Floor < elevatorState.LastRegisterdFloor {
+						orderOnNextFloors = true
+					}
+				}
+			} else {
+
+				switch elevatorState.Direction {
+				case driver.Up:
+					if order.Floor > elevatorState.LastRegisterdFloor {
+						orderOnNextFloors = true
+					}
+
+				case driver.Down:
+					if order.Floor < elevatorState.LastRegisterdFloor {
+						orderOnNextFloors = true
+
+					}
+				}
+			}
+		}
+
+		if !orderOnFloor && !orderOnNextFloors {
+			if elevatorState.Direction == driver.Up {
+				elevatorState.Direction = driver.Down
+			} else {
+				elevatorState.Direction = driver.Up
+			}
+		}
+	}
+	return orderOnFloor, orderOnNextFloors
 }

@@ -3,8 +3,6 @@ package bcast
 import (
 	"encoding/json"
 	"fmt"
-	//"log"
-	//"math/rand"
 	"net"
 	"reflect"
 	"strings"
@@ -16,8 +14,6 @@ import (
 // it on `port`
 func Transmitter(port int, chans ...interface{}) {
 	checkArgs(chans...)
-
-	//var packetloss int
 
 	n := 0
 	for range chans {
@@ -39,14 +35,8 @@ func Transmitter(port int, chans ...interface{}) {
 	for {
 		chosen, value, _ := reflect.Select(selectCases)
 		buf, _ := json.Marshal(value.Interface())
-		//packetloss = rand.Intn(10)
-
-		//REMOVE THIS
-		//if packetloss > 8 {
-		//log.Println("Sending messages")
-
 		conn.WriteTo([]byte(typeNames[chosen]+string(buf)), addr)
-		//}
+
 	}
 }
 
@@ -76,11 +66,11 @@ func Receiver(port int, chans ...interface{}) {
 	}
 }
 
-// Checks that args to Tx'er/Rx'er are valid:
+//  Checks that args to Tx'er/Rx'er are valid:
 //  All args must be channels
 //  Element types of channels must be encodable with JSON
 //  No element types are repeated
-// Implementation note:
+//  Implementation note:
 //  - Why there is no `isMarshalable()` function in encoding/json is a mystery,
 //    so the tests on element type are hand-copied from `encoding/json/encode.go`
 func checkArgs(chans ...interface{}) {
@@ -91,7 +81,6 @@ func checkArgs(chans ...interface{}) {
 	elemTypes := make([]reflect.Type, n)
 
 	for i, ch := range chans {
-		// Must be a channel
 		if reflect.ValueOf(ch).Kind() != reflect.Chan {
 			panic(fmt.Sprintf(
 				"Argument must be a channel, got '%s' instead (arg#%d)",
@@ -100,7 +89,6 @@ func checkArgs(chans ...interface{}) {
 
 		elemType := reflect.TypeOf(ch).Elem()
 
-		// Element type must not be repeated
 		for j, e := range elemTypes {
 			if e == elemType {
 				panic(fmt.Sprintf(
@@ -110,7 +98,6 @@ func checkArgs(chans ...interface{}) {
 		}
 		elemTypes[i] = elemType
 
-		// Element type must be encodable with JSON
 		switch elemType.Kind() {
 		case reflect.Complex64, reflect.Complex128, reflect.Chan, reflect.Func, reflect.UnsafePointer:
 			panic(fmt.Sprintf(

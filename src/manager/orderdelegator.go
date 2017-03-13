@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"log"
 	"math"
 
 	"../driver"
@@ -30,7 +29,7 @@ func orderDelegator(StateMap map[string]utilities.State,
 		for _, peer := range currentPeers {
 			if elevator == peer {
 				if state.Idle {
-					fitnessMap[elevator] = math.Abs(float64(state.LastRegisterdFloor-OrderEvent.Floor)) * driver.TRAVELTIME_BETWEEN_FLOORS
+					fitnessMap[elevator] = math.Abs(float64(state.LastRegisterdFloor-OrderEvent.Floor)) * driver.TravelTimeBetweenFloors
 				} else {
 					floorDifference := float64(OrderEvent.Floor - state.LastRegisterdFloor)
 					switch OrderEvent.Button {
@@ -72,7 +71,7 @@ func orderDelegator(StateMap map[string]utilities.State,
 							}
 						}
 					}
-					fitnessMap[elevator] = fitnessMap[elevator] * driver.TRAVELTIME_BETWEEN_FLOORS
+					fitnessMap[elevator] = fitnessMap[elevator] * driver.TravelTimeBetweenFloors
 					fitnessMap[elevator] += increaseFitnessPerOrder(peer, orderAssignedToMap)
 				}
 			}
@@ -94,7 +93,6 @@ func orderDelegator(StateMap map[string]utilities.State,
 	}
 
 	orderAssignedToMap[OrderEvent.Checksum] = currentId
-	log.Println("Order delegated to: ", currentId)
 	if currentId == localId {
 		return true
 	} else {

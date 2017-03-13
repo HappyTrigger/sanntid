@@ -1,11 +1,5 @@
 package manager
 
-/*
-The manager handles new and old information and executes action based on the information given.
-It tracks other connected elevators, and handles order-delegation based on the states of every single elevator.
-The manager is also responsible for sending states, order-events and achnowledge messages from other elevators.
-*/
-
 import (
 	"fmt"
 	"log"
@@ -23,7 +17,6 @@ const (
 	orderResendInterval       = 30 * time.Millisecond
 	stateResendInterval       = 100 * time.Millisecond
 	orderNotCompletedInterval = 2 * time.Second
-	travelTimeBetweenFloors   = 3 * time.Second
 	doorOpenTime              = 3
 )
 
@@ -181,7 +174,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			sendNewStateToPeers(sendStateToPeers, internalOrderMap)
 
 		case orderComplete := <-recOrderCompleteFromPeers:
-			log.Println("Order at Floor:", orderComplete.Floor, " completed")
+			log.Println("Order at Floor:", orderComplete.Floor+1, " completed")
 			delete(orderAssignedToMap, orderComplete.Checksum)
 			delete(externalOrderMap, orderComplete.Checksum)
 			delete(orderRecievedAtTime, orderComplete.Checksum)
@@ -266,7 +259,7 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 		case <-orderNotCompleted:
 			for checksum, timeSince := range orderRecievedAtTime {
 				if time.Since(timeSince) > 20*time.Second {
-					if orderAssignedToMap[checksum] == localId {
+					if orderAssignedToMap[checksum] == localId && len(currentPeers) > 1 {
 						err := utilities.Reboot(localId)
 						if err != nil {
 							panic("Major malfunction, call technical assistance")

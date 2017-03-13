@@ -1,16 +1,11 @@
 package main
 
-/*
-Main functions as a connectionpoint between modules, creating and sharing channels based on their needs.
-*/
-
 import (
 	"flag"
 	"os"
 	"os/signal"
 
 	"./driver"
-	//	"./dummydriver"
 	"./elevator"
 	"./manager"
 	"./utilities"
@@ -28,18 +23,14 @@ func main() {
 		panic("Ctrl+C")
 	}()
 
-	//manager
 	DriverEvent := make(chan driver.OrderEvent)
+	SensorEvent := make(chan int)
+	StopButton := make(chan bool)
+
 	SendOrderToElevator := make(chan driver.OrderEvent)
 	ElevatorOrderComplete := make(chan driver.OrderEvent)
-
-	//Elevator
-	SensorEvent := make(chan int)
 	ElevatorEmergency := make(chan bool)
-
-	//statetransfer
 	ElevatorState := make(chan utilities.State)
-	StopButton := make(chan bool)
 
 	driver.Init(DriverEvent, SensorEvent, StopButton)
 
