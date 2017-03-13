@@ -17,7 +17,7 @@ import (
 func Transmitter(port int, chans ...interface{}) {
 	checkArgs(chans...)
 
-	var packetloss int
+	//var packetloss int
 
 	n := 0
 	for range chans {
@@ -39,14 +39,14 @@ func Transmitter(port int, chans ...interface{}) {
 	for {
 		chosen, value, _ := reflect.Select(selectCases)
 		buf, _ := json.Marshal(value.Interface())
-		packetloss = rand.Intn(10)
+		//packetloss = rand.Intn(10)
 
 		//REMOVE THIS
-		if packetloss > 8 {
-			log.Println("Sending messages")
+		//if packetloss > 8 {
+		//log.Println("Sending messages")
 
-			conn.WriteTo([]byte(typeNames[chosen]+string(buf)), addr)
-		}
+		conn.WriteTo([]byte(typeNames[chosen]+string(buf)), addr)
+		//}
 	}
 }
 
