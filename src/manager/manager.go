@@ -17,7 +17,6 @@ const (
 	orderResendInterval       = 30 * time.Millisecond
 	stateResendInterval       = 100 * time.Millisecond
 	orderNotCompletedInterval = 2 * time.Second
-	doorOpenTime              = 3
 )
 
 var localId string

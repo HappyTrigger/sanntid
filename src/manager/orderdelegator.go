@@ -7,6 +7,11 @@ import (
 	"../utilities"
 )
 
+const (
+	travelTimeBetweenFloors = 2.7
+	doorOpenTime            = 3
+)
+
 func increaseFitnessPerOrder(peer string,
 	orderAssignedToElevator map[int]string) float64 {
 	var fitness float64
@@ -29,7 +34,7 @@ func orderDelegator(StateMap map[string]utilities.State,
 		for _, peer := range currentPeers {
 			if elevator == peer {
 				if state.Idle {
-					fitnessMap[elevator] = math.Abs(float64(state.LastRegisterdFloor-OrderEvent.Floor)) * driver.TravelTimeBetweenFloors
+					fitnessMap[elevator] = math.Abs(float64(state.LastRegisterdFloor-OrderEvent.Floor)) * travelTimeBetweenFloors
 				} else {
 					floorDifference := float64(OrderEvent.Floor - state.LastRegisterdFloor)
 					switch OrderEvent.Button {
@@ -71,7 +76,7 @@ func orderDelegator(StateMap map[string]utilities.State,
 							}
 						}
 					}
-					fitnessMap[elevator] = fitnessMap[elevator] * driver.TravelTimeBetweenFloors
+					fitnessMap[elevator] = fitnessMap[elevator] * travelTimeBetweenFloors
 					fitnessMap[elevator] += increaseFitnessPerOrder(peer, orderAssignedToMap)
 				}
 			}

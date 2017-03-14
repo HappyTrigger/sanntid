@@ -14,7 +14,6 @@ const (
 	invalidFloor            = -1
 	motorSpeed              = 2800
 	pollInterval            = 1 * time.Millisecond
-	TravelTimeBetweenFloors = 2.7
 )
 
 var lamp_channel_matrix = [N_FLOORS][N_BUTTONS]int{
