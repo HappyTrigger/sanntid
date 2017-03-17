@@ -151,7 +151,10 @@ func Run(SendOrderToElevator chan<- driver.OrderEvent,
 			if state, ok := stateMap[p.New]; ok {
 				state.StateSentFromId = localId
 				log.Println("Sending state to reconnecting elevator")
-				sendStateToPeers <- state
+				for i := 0; i < 10; i++ {
+					sendStateToPeers <- state
+
+				}
 			}
 
 			for _, lostId := range p.Lost {
